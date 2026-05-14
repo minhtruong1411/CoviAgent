@@ -68,6 +68,9 @@ embedding:
 ## 🏃 Cách Chạy Hệ Thống
 
 ### 1. Ingestion & Indexing (Nạp dữ liệu)
+> [!IMPORTANT]
+> **Lưu ý:** Bước này chỉ cần chạy **1 lần duy nhất** lúc đầu, hoặc khi bạn có thêm/sửa file tài liệu trong thư mục `data/raw/` (hoặc khi muốn đổi mô hình Embedding). Dữ liệu sau đó sẽ được lưu vĩnh viễn trong Qdrant.
+
 Đọc các file trong thư mục `data/raw/`, chunking và đẩy vào Qdrant Server:
 ```bash
 python scripts/build_index.py --config configs/default_vector_rag.yaml

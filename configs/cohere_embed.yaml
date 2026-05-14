@@ -1,0 +1,18 @@
+# Config: Cohere Embedding + Groq LLM
+# Usage: python scripts/run_benchmark.py --config configs/cohere_embed.yaml
+
+llm:
+  provider: "groq"
+  model_name: "llama-3.3-70b-versatile"
+  temperature: 0.0
+
+embedding:
+  provider: "cohere"
+  model_name: "embed-english-v3.0"
+  dimension: 1024
+
+retriever:
+  top_k: 5
+  collection_name: "medical_dialogue_cohere"
+
+qdrant_url: "http://localhost:6333"

@@ -1,0 +1,18 @@
+# Config: HuggingFace Embeddings + Groq LLM (Fully free / local embeddings)
+# Usage: python scripts/run_benchmark.py --config configs/groq_hf_embed.yaml
+
+llm:
+  provider: "groq"
+  model_name: "llama-3.3-70b-versatile"
+  temperature: 0.0
+
+embedding:
+  provider: "huggingface"
+  model_name: "BAAI/bge-small-en-v1.5"
+  dimension: 384
+
+retriever:
+  top_k: 5
+  collection_name: "medical_dialogue_v1"
+
+qdrant_url: "http://localhost:6333"

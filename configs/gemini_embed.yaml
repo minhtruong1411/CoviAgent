@@ -1,0 +1,18 @@
+# Config: Gemini Embedding + OpenRouter LLM
+# Usage: python scripts/run_benchmark.py --config configs/gemini_embed.yaml
+
+llm:
+  provider: "openrouter"
+  model_name: "google/gemini-2.0-flash-001"
+  temperature: 0.0
+
+embedding:
+  provider: "gemini"
+  model_name: "models/text-embedding-004"
+  dimension: 768
+
+retriever:
+  top_k: 5
+  collection_name: "medical_dialogue_gemini"
+
+qdrant_url: "http://localhost:6333"

@@ -1,0 +1,18 @@
+# Config: OpenRouter (Access any model via proxy)
+# Usage: python scripts/run_benchmark.py --config configs/openrouter_gemini.yaml
+
+llm:
+  provider: "openrouter"
+  model_name: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
+  temperature: 0.0
+
+embedding:
+  provider: "cohere"
+  model_name: "embed-english-v3.0"
+  dimension: 1024
+
+retriever:
+  top_k: 5
+  collection_name: "medical_dialogue_v1"
+
+qdrant_url: "http://localhost:6333"

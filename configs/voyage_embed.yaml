@@ -1,0 +1,18 @@
+# Config: Voyage Embedding + Groq LLM
+# Usage: python scripts/run_benchmark.py --config configs/voyage_embed.yaml
+
+llm:
+  provider: "groq"
+  model_name: "llama-3.3-70b-versatile"
+  temperature: 0.0
+
+embedding:
+  provider: "voyage"
+  model_name: "voyage-2"
+  dimension: 1024
+
+retriever:
+  top_k: 5
+  collection_name: "medical_dialogue_voyage"
+
+qdrant_url: "http://localhost:6333"

@@ -13,6 +13,6 @@ embedding:
 
 retriever:
   top_k: 5
-  collection_name: "medical_dialogue_v1"
+  collection_name: "medical_dialogue_hf"
 
 qdrant_url: "http://localhost:6333"

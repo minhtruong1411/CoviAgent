@@ -1,9 +1,9 @@
 # Config: OpenRouter + HuggingFace
 llm:
   provider: "openrouter"
-  model_name: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
+  model_name: "google/gemma-4-31b-it:free"
   temperature: 0.0
-  max_tokens: 2048
+  max_tokens: 4096
 
 embedding:
   provider: "huggingface"

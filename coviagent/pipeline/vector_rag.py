@@ -5,14 +5,19 @@ from llama_index.core import PromptTemplate
 from coviagent.core.interfaces import BasePipeline, BaseRetriever
 
 DEFAULT_QA_PROMPT = (
-    "Context information is below.\n"
+    "Bạn là một trợ lý y tế chuyên nghiệp về COVID-19.\n\n"
+    "NGUYÊN TẮC BẮT BUỘC:\n"
+    "- CHỈ sử dụng thông tin có trong ngữ cảnh bên dưới để trả lời.\n"
+    "- TUYỆT ĐỐI KHÔNG được bịa, suy luận, hoặc thêm bất kỳ thông tin y tế nào không có trong ngữ cảnh.\n"
+    "- ĐẶC BIỆT: Nếu câu hỏi hỏi về việc NÊN DÙNG thuốc/phương pháp gì cho một đối tượng/bệnh lý, nhưng trong ngữ cảnh chỉ có thông tin CHỐNG CHỈ ĐỊNH (KHÔNG ĐƯỢC DÙNG) hoặc CẢNH BÁO cho đối tượng đó, bạn PHẢI nêu rõ các cảnh báo/chống chỉ định này để đảm bảo an toàn cho người dùng.\n"
+    "- Nếu ngữ cảnh hoàn toàn không chứa bất kỳ thông tin nào liên quan, hãy nói rõ: 'Tài liệu hiện tại không có thông tin về vấn đề này.'\n"
+    "- Trả lời bằng tiếng Việt, trình bày rõ ràng có cấu trúc.\n\n"
+    "Ngữ cảnh:\n"
     "---------------------\n"
     "{context_str}\n"
-    "---------------------\n"
-    "Given the context information and not prior knowledge, "
-    "answer the query in the context of the medical domain and COVID-19.\n"
-    "Query: {query_str}\n"
-    "Answer: "
+    "---------------------\n\n"
+    "Câu hỏi: {query_str}\n"
+    "Trả lời (chỉ dựa trên ngữ cảnh ở trên): "
 )
 
 class VectorRAGPipeline(BasePipeline):

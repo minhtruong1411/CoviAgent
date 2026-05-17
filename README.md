@@ -86,3 +86,10 @@ python scripts/run_benchmark.py \
 ```
 
 Sau khi chạy xong, kết quả và log chi tiết sẽ được xuất ra trong thư mục `experiments/`.
+
+### 3. Tương tác với Chatbot (Interactive Mode)
+Bạn có thể chạy thử chatbot trực tiếp trên terminal để đặt câu hỏi và nhận câu trả lời từ hệ thống:
+```bash
+python scripts/test_chatbot.py --config configs/default_vector_rag.yaml
+```
+*(Lưu ý: Nếu bạn nạp dữ liệu bằng file cấu hình khác, hãy thay `default_vector_rag.yaml` bằng file tương ứng, ví dụ: `openrouter_hf.yaml`)*

@@ -19,3 +19,4 @@ llama-index-embeddings-huggingface>=0.1.0
 llama-index-embeddings-gemini
 llama-index-embeddings-cohere
 llama-index-embeddings-voyageai
+streamlit>=1.30.0

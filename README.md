@@ -93,3 +93,13 @@ Bạn có thể chạy thử chatbot trực tiếp trên terminal để đặt c
 python scripts/test_chatbot.py --config configs/default_vector_rag.yaml
 ```
 *(Lưu ý: Nếu bạn nạp dữ liệu bằng file cấu hình khác, hãy thay `default_vector_rag.yaml` bằng file tương ứng, ví dụ: `openrouter_hf.yaml`)*
+
+### 4. Giao diện Web (Streamlit UI)
+Ngoài chế độ Terminal, bạn có thể sử dụng giao diện Web chuyên nghiệp với Streamlit:
+```bash
+python -m streamlit run app.py
+```
+Trình duyệt sẽ tự động mở tại `http://localhost:8501`. Giao diện hỗ trợ:
+- 💬 Chat trực tiếp với lịch sử hội thoại
+- ⚙️ Chọn file cấu hình LLM/Embedding từ thanh Sidebar
+- 📚 Xem nguồn tài liệu tham khảo cho mỗi câu trả lời

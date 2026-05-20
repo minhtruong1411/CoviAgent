@@ -11,6 +11,14 @@ embedding:
 retriever:
   top_k: 5
   collection_name: "medical_dialogue_v1"
+  query_mode: "dense" # Options: dense, hybrid
+
+# Reranker configuration (uncomment to enable local cross-encoder reranking)
+# reranker:
+#   enabled: true
+#   model_name: "BAAI/bge-reranker-base" # Runs locally on CPU/GPU
+#   top_n: 5 # Number of chunks to feed the LLM
+#   retrieve_top_k: 15 # Number of candidate chunks to retrieve initially before reranking
 
 qdrant_url: "http://localhost:6333"
 # Set QDRANT_API_KEY environment variable if needed

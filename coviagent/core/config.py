@@ -15,11 +15,19 @@ class EmbeddingConfig(BaseSettings):
 class RetrieverConfig(BaseSettings):
     top_k: int = 5
     collection_name: str = "coviagent_docs"
+    query_mode: str = "dense" # Options: dense, hybrid
+
+class RerankerConfig(BaseSettings):
+    enabled: bool = False
+    model_name: str = "BAAI/bge-reranker-base"
+    top_n: int = 5
+    retrieve_top_k: int = 15
 
 class AppConfig(BaseSettings):
     llm: LLMConfig = LLMConfig()
     embedding: EmbeddingConfig = EmbeddingConfig()
     retriever: RetrieverConfig = RetrieverConfig()
+    reranker: RerankerConfig = RerankerConfig()
     
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: Optional[str] = None

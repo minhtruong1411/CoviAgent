@@ -58,7 +58,8 @@ def main():
     retriever = VectorRetriever.from_qdrant_client(
         client=client, 
         config=config.retriever,
-        embed_model=embed_model
+        embed_model=embed_model,
+        reranker_config=config.reranker
     )
     
     pipeline = VectorRAGPipeline(retriever=retriever, llm=llm)

@@ -23,11 +23,21 @@ class RerankerConfig(BaseSettings):
     top_n: int = 5
     retrieve_top_k: int = 15
 
+class JudgeConfig(BaseSettings):
+    """Configuration for LLM-as-a-Judge evaluation."""
+    provider: str = "groq"
+    model_name: str = "llama-3.3-70b-versatile"
+    temperature: float = 0.0
+    num_runs: int = 3              # Number of judge runs for majority vote
+    api_delay_seconds: float = 5.0 # Delay between API calls (rate limiting)
+    pass_threshold: float = 3.0    # Average rubric score >= this → Pass
+
 class AppConfig(BaseSettings):
     llm: LLMConfig = LLMConfig()
     embedding: EmbeddingConfig = EmbeddingConfig()
     retriever: RetrieverConfig = RetrieverConfig()
     reranker: RerankerConfig = RerankerConfig()
+    judge: Optional[JudgeConfig] = None
     
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: Optional[str] = None

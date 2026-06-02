@@ -1,0 +1,82 @@
+[
+  {
+    "id": "GOLD_01",
+    "question": "Tên của loại virus gây ra bệnh COVID-19 là gì?",
+    "ground_truth": "Virus SARS-CoV-2.",
+    "category": "single_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 4
+  },
+  {
+    "id": "GOLD_02",
+    "question": "Mất trung bình bao nhiêu ngày kể từ khi một người bị nhiễm virus để các triệu chứng bắt đầu xuất hiện?",
+    "ground_truth": "Trung bình mất từ 5-6 ngày, tuy nhiên thời gian này có thể lên đến 14 ngày.",
+    "category": "single_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 4
+  },
+  {
+    "id": "GOLD_03",
+    "question": "Một người sử dụng thuốc kháng virus Paxlovid thì có thể có tác dụng phụ cụ thể nào?",
+    "ground_truth": "Paxlovid có thể gây ra vị kim loại (metallic taste) trong miệng của người dùng và vị này sẽ biến mất khi họ ngừng dùng thuốc.",
+    "category": "single_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 4
+  },
+  {
+    "id": "GOLD_04",
+    "question": "Hãy liệt kê tất cả các nhóm đối tượng và các bệnh nền có nguy cơ cao chuyển biến thành bệnh nghiêm trọng hoặc tử vong khi mắc COVID-19?",
+    "ground_truth": "Các nhóm đối tượng và bệnh nền bao gồm: Người cao tuổi (đặc biệt là từ 75 tuổi trở lên) ; người chưa tiêm chủng hoặc chưa cập nhật vắc-xin COVID-19 ; những người có bệnh nền như bệnh tim mạch , tiểu đường , bệnh phổi/hô hấp mãn tính , ung thư , hoặc người có hệ miễn dịch bị suy giảm.",
+    "category": "multi_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "GOLD_05",
+    "question": "Hãy liệt kê đầy đủ các triệu chứng được phân loại là Nghiêm trọng (Serious symptoms) của bệnh COVID-19?",
+    "ground_truth": "Các triệu chứng nghiêm trọng gồm có: Khó thở hoặc hụt hơi ; mất khả năng nói hoặc khả năng vận động; lú lẫn ; và đau ngực.",
+    "category": "multi_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 4
+  },
+  {
+    "id": "GOLD_06",
+    "question": "So sánh sự khác biệt về đối tượng sử dụng giữa hai loại thuốc kháng virus dạng uống tại nhà là Paxlovid và Lagevrio?",
+    "ground_truth": "Thuốc Paxlovid (Nirmatrelvir phối hợp với Ritonavir) được sử dụng cho người lớn và trẻ em từ 12 tuổi trở lên. Trong khi đó, thuốc Lagevrio (Molnupiravir) chỉ được chỉ định dành riêng cho đối tượng là người lớn.",
+    "category": "multi_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 4
+  },
+  {
+    "id": "GOLD_07",
+    "question": "Bạn khuyến nghị như thế nào về số lần và khoảng cách giữa các lần làm xét nghiệm nhanh kháng nguyên (Antigen test) để một người có thể tự tin kết luận mình không bị nhiễm COVID-19?",
+    "ground_truth": "Một xét nghiệm kháng nguyên âm tính duy nhất không thể loại trừ khả năng nhiễm trùng. FDA khuyến nghị cần thực hiện 2 lần xét nghiệm âm tính đối với những cá nhân có triệu chứng, hoặc thực hiện 3 lần xét nghiệm đối với những người không có triệu chứng; các lần xét nghiệm này phải được thực hiện cách nhau 48 giờ.",
+    "category": "logic",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "GOLD_08",
+    "question": "Một bệnh nhân nhiễm COVID-19 là trẻ em 13 tuổi. Có những loại thuốc kháng virus nào phù hợp với độ tuổi này, và thời hạn bắt đầu điều trị nghiêm ngặt của từng loại thuốc đó là gì?",
+    "ground_truth": "Trẻ em 13 tuổi thuộc nhóm đối tượng \"trẻ em từ 12 tuổi trở lên\". Có 2 loại thuốc phù hợp: Thuốc dạng uống tại nhà là Paxlovid (Nirmatrelvir với Ritonavir): Phải bắt đầu điều trị càng sớm càng tốt và phải trong vòng 5 ngày kể từ khi triệu chứng khởi phát. Thuốc dạng tiêm truyền tĩnh mạch tại cơ sở y tế là Veklury (remdesivir): Phải bắt đầu càng sớm càng tốt và phải trong vòng 7 ngày kể từ khi triệu chứng khởi phát.",
+    "category": "logic",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "GOLD_09",
+    "question": "Thuốc dự phòng Pemivibart (Pemgarda) được chỉ định cho đối tượng nào, yêu cầu tối thiểu về cân nặng là bao nhiêu, có thể dùng sau khi tiêm vắc-xin bao lâu và tần suất dùng lại như thế nào nếu cần bảo vệ liên tục?",
+    "ground_truth": "Thuốc Pemgarda được chỉ định cho những người bị suy giảm miễn dịch ở mức độ vừa hoặc nặng, từ 12 tuổi trở lên. Yêu cầu cân nặng tối thiểu là từ 88 pounds trở lên. Thuốc có thể được sử dụng ít nhất 2 tuần sau khi người đó tiêm vắc-xin COVID-19. Nếu cần bảo vệ liên tục, các liều bổ sung cần được thực hiện định kỳ 3 tháng một lần.",
+    "category": "logic",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "GOLD_10",
+    "question": "Hiện tượng COVID-19 Rebound tái phát là gì, xuất hiện trong thời gian nào và việc sử dụng thuốc kháng virus có làm tăng nguy cơ tiến triển bệnh nghiêm trọng khi bị tái phát không?",
+    "ground_truth": "COVID-19 tái phát là hiện tượng xuất hiện trở lại các triệu chứng hoặc có kết quả xét nghiệm dương tính mới. Hiện tượng này xảy ra từ 3 đến 7 ngày sau khi người bệnh đã hồi phục từ đợt bệnh ban đầu hoặc sau khi đã có kết quả xét nghiệm âm tính với virus SARS-CoV-2. Các nghiên cứu chỉ ra rằng không có sự gia tăng nguy cơ mắc bệnh nghiêm trọng ở những người gặp hiện tượng tái phát này sau khi sử dụng thuốc kháng virus.",
+    "category": "logic",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  }
+]

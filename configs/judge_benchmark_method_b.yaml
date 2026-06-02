@@ -1,0 +1,32 @@
+# ──────────────────────────────────────────────────────────
+# LLM-as-a-Judge Benchmark Configuration (Method B)
+# ──────────────────────────────────────────────────────────
+# Dùng cùng mô hình LLM nhưng cấu hình truy xuất (retriever) khác
+# để so sánh phương pháp truy xuất.
+# Ví dụ ở đây ta đổi top_k từ 5 lên 10.
+
+# Pipeline under evaluation (CÙNG MODEL)
+llm:
+  provider: "groq"
+  model_name: "llama-3.3-70b-versatile"
+  temperature: 0.0
+
+embedding:
+  provider: "huggingface"
+  model_name: "BAAI/bge-small-en-v1.5"
+  dimension: 384
+
+retriever:
+  top_k: 10 # <-- ĐỔI THAM SỐ NÀY ĐỂ BENCHMARK PHƯƠNG PHÁP (top_k=10 thay vì 5)
+  collection_name: "medical_dialogue_v1"
+
+qdrant_url: "http://localhost:6333"
+
+# Judge configuration (không cần thiết trong config-b vì sẽ dùng config của A, nhưng có thể khai báo cho đủ format)
+judge:
+  provider: "groq"
+  model_name: "llama-3.3-70b-versatile"
+  temperature: 0.0
+  num_runs: 3
+  api_delay_seconds: 10.0
+  pass_threshold: 3.0

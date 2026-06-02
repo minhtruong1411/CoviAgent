@@ -1,0 +1,33 @@
+# ──────────────────────────────────────────────────────────
+# LLM-as-a-Judge Benchmark Configuration
+# ──────────────────────────────────────────────────────────
+# Usage:
+#   python scripts/run_judge_benchmark.py --config configs/judge_benchmark.yaml
+#   python scripts/run_judge_benchmark.py --config configs/judge_benchmark.yaml --mode pairwise --config-b configs/openrouter_hf.yaml
+#   python scripts/run_judge_benchmark.py --config configs/judge_benchmark.yaml --mode gold-validate
+
+# Pipeline under evaluation
+llm:
+  provider: "groq"
+  model_name: "llama-3.3-70b-versatile"
+  temperature: 0.0
+
+embedding:
+  provider: "huggingface"
+  model_name: "BAAI/bge-small-en-v1.5"
+  dimension: 384
+
+retriever:
+  top_k: 5
+  collection_name: "medical_dialogue_v1"
+
+qdrant_url: "http://localhost:6333"
+
+# Judge configuration
+judge:
+  provider: "groq"
+  model_name: "llama-3.3-70b-versatile"
+  temperature: 0.0
+  num_runs: 3              # Majority vote: 3 lần chấm
+  api_delay_seconds: 10.0   # Tăng delay lên 10s để tránh rate limit của Groq
+  pass_threshold: 3.0      # Trung bình >= 3.0 → Pass

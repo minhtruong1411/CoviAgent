@@ -1,7 +1,7 @@
 # Config: OpenRouter + HuggingFace
 llm:
   provider: "openrouter"
-  model_name: "google/gemma-4-31b-it:free"
+  model_name: "openrouter/owl-alpha"
   temperature: 0.0
   max_tokens: 4096
 

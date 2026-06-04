@@ -6,10 +6,13 @@ Usage:
   python scripts/run_judge_benchmark.py --config configs/judge_benchmark.yaml
 
   # Pairwise comparison (two pipelines)
-  python scripts/run_judge_benchmark.py --config configs/judge_benchmark.yaml --mode pairwise --config-b configs/openrouter_hf.yaml
+  python scripts/run_judge_benchmark.py --config configs/judge_benchmark.yaml --mode pairwise --config-b configs/judge_benchmark.yaml --pipeline-type-b kg
 
   # Gold case validation (test judge reliability)
   python scripts/run_judge_benchmark.py --config configs/judge_benchmark.yaml --mode gold-validate
+
+  # 3-way Round-Robin (Vector vs KG vs GraphRAG)
+  python scripts/run_judge_benchmark.py --config configs/judge_benchmark.yaml --mode round-robin --pipeline-type vector --config-b configs/judge_benchmark.yaml --pipeline-type-b kg --config-c configs/judge_benchmark.yaml --pipeline-type-c graphrag
 
   # Custom options
   python scripts/run_judge_benchmark.py --config configs/judge_benchmark.yaml --questions questions.json --experiment my_exp --max-questions 5
@@ -29,7 +32,7 @@ from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from llama_index.core import Settings
 
-from coviagent.core.config import AppConfig, LLMConfig, JudgeConfig
+from coviagent.core.config import AppConfig, LLMConfig, JudgeConfig, Neo4jConfig
 from coviagent.core.factories import create_llm, create_embedding
 from coviagent.core.models import QAItem, GoldCase
 from coviagent.retrieval.vector_retriever import VectorRetriever
@@ -47,11 +50,43 @@ def load_config(config_path: str) -> AppConfig:
 
 
 def build_pipeline(config: AppConfig, p_type: str = "vector") -> BasePipeline:
-    """Build a Pipeline from AppConfig (vector or kg)."""
+    """Build a Pipeline from AppConfig (vector, kg, or graphrag)."""
+    
+    import os
+    actual_api_key = config.llm.api_key
+    if not actual_api_key and getattr(config.llm, "api_key_env_var", None):
+        actual_api_key = os.environ.get(config.llm.api_key_env_var)
+        
     if p_type == "kg":
         from coviagent.pipeline.kg_rag import KGRAGPipeline
-        # We use Groq model configured in LLMConfig
-        return KGRAGPipeline(model_name=config.llm.model_name)
+        return KGRAGPipeline(model_name=config.llm.model_name, api_key=actual_api_key)
+    
+    if p_type == "graphrag":
+        from coviagent.pipeline.graph_rag import GraphRAGPipeline
+        # GraphRAG needs both vector retriever AND Neo4j connection
+        embed_model = create_embedding(config.embedding)
+        llm = create_llm(config.llm)
+        Settings.embed_model = embed_model
+        Settings.llm = llm
+        
+        client = QdrantClient(url=config.qdrant_url)
+        retriever = VectorRetriever.from_qdrant_client(
+            client=client,
+            config=config.retriever,
+            embed_model=embed_model,
+            reranker_config=config.reranker,
+        )
+        
+        # Neo4j config (from YAML or env vars)
+        neo4j_cfg = config.neo4j or Neo4jConfig()
+        return GraphRAGPipeline(
+            retriever=retriever,
+            llm=llm,
+            neo4j_uri=neo4j_cfg.uri if config.neo4j else None,
+            neo4j_username=neo4j_cfg.username if config.neo4j else None,
+            neo4j_password=neo4j_cfg.password if config.neo4j else None,
+            neo4j_database=neo4j_cfg.database if config.neo4j else None,
+        )
     
     # Default is vector RAG
     embed_model = create_embedding(config.embedding)
@@ -79,6 +114,8 @@ def build_judge(config: AppConfig) -> LLMJudge:
         provider=judge_config.provider,
         model_name=judge_config.model_name,
         temperature=judge_config.temperature,
+        api_key=judge_config.api_key,
+        api_key_env_var=judge_config.api_key_env_var,
     )
     judge_llm = create_llm(judge_llm_config)
     
@@ -140,20 +177,28 @@ def main():
         help="Path to YAML config file (e.g., configs/judge_benchmark.yaml)",
     )
     parser.add_argument(
-        "--pipeline-type", choices=["vector", "kg"], default="vector",
-        help="Type of pipeline A: vector (default) or kg",
+        "--pipeline-type", choices=["vector", "kg", "graphrag"], default="vector",
+        help="Type of pipeline A: vector (default), kg, or graphrag",
     )
     parser.add_argument(
-        "--mode", choices=["rubric", "pairwise", "gold-validate"], default="rubric",
-        help="Evaluation mode: rubric (default), pairwise, or gold-validate",
+        "--mode", choices=["rubric", "pairwise", "round-robin", "compare-rubric", "gold-validate"], default="rubric",
+        help="Evaluation mode: rubric (default), pairwise, round-robin, compare-rubric, or gold-validate",
     )
     parser.add_argument(
         "--config-b",
-        help="Path to second pipeline config (required for pairwise mode)",
+        help="Path to second pipeline config (required for pairwise/round-robin mode)",
     )
     parser.add_argument(
-        "--pipeline-type-b", choices=["vector", "kg"], default="vector",
-        help="Type of pipeline B for pairwise mode: vector (default) or kg",
+        "--pipeline-type-b", choices=["vector", "kg", "graphrag"], default="vector",
+        help="Type of pipeline B: vector (default), kg, or graphrag",
+    )
+    parser.add_argument(
+        "--config-c",
+        help="Path to third pipeline config (for round-robin mode)",
+    )
+    parser.add_argument(
+        "--pipeline-type-c", choices=["vector", "kg", "graphrag"], default="graphrag",
+        help="Type of pipeline C: vector, kg, or graphrag (default)",
     )
     parser.add_argument(
         "--questions", default="data/gold_cases.json",
@@ -178,6 +223,14 @@ def main():
     parser.add_argument(
         "--no-majority-vote", action="store_true",
         help="Disable majority vote (single judge run per question)",
+    )
+    parser.add_argument(
+        "--phase", choices=["all", "generate", "judge"], default="all",
+        help="Execution phase: all (default), generate (only run pipelines and save), or judge (load saved and evaluate)",
+    )
+    parser.add_argument(
+        "--answers-file", default="experiments/intermediate_answers.json",
+        help="Path to save/load intermediate generated answers",
     )
     
     args = parser.parse_args()
@@ -205,8 +258,11 @@ def main():
         print(f"📋 Mode: Rubric Evaluation")
         
         # Build pipeline
-        print(f"🔧 Building pipeline: {config.llm.model_name} (Type: {args.pipeline_type.upper()})")
-        pipeline = build_pipeline(config, p_type=args.pipeline_type)
+        if args.phase in ("all", "generate"):
+            print(f"🔧 Building pipeline: {config.llm.model_name} (Type: {args.pipeline_type.upper()})")
+            pipeline = build_pipeline(config, p_type=args.pipeline_type)
+        else:
+            pipeline = None
         
         # Load questions
         print(f"📝 Loading questions: {args.questions}")
@@ -222,6 +278,8 @@ def main():
             dataset=dataset,
             pipeline=pipeline,
             use_majority_vote=not args.no_majority_vote,
+            phase=args.phase,
+            answers_file=args.answers_file,
         )
     
     elif args.mode == "pairwise":
@@ -231,15 +289,20 @@ def main():
         
         print(f"⚖️  Mode: Pairwise Comparison")
         
-        # Build pipeline A
-        print(f"🔧 Building Pipeline A: {config.llm.model_name} (Type: {args.pipeline_type.upper()})")
-        pipeline_a = build_pipeline(config, p_type=args.pipeline_type)
-        
-        # Build pipeline B
+        # Load config B (needed for labels)
         print(f"📁 Loading config B: {args.config_b}")
         config_b = load_config(args.config_b)
-        print(f"🔧 Building Pipeline B: {config_b.llm.model_name} (Type: {args.pipeline_type_b.upper()})")
-        pipeline_b = build_pipeline(config_b, p_type=args.pipeline_type_b)
+        
+        # Build pipelines
+        if args.phase in ("all", "generate"):
+            print(f"🔧 Building Pipeline A: {config.llm.model_name} (Type: {args.pipeline_type.upper()})")
+            pipeline_a = build_pipeline(config, p_type=args.pipeline_type)
+            
+            print(f"🔧 Building Pipeline B: {config_b.llm.model_name} (Type: {args.pipeline_type_b.upper()})")
+            pipeline_b = build_pipeline(config_b, p_type=args.pipeline_type_b)
+        else:
+            pipeline_a = None
+            pipeline_b = None
         
         # Load questions
         dataset = load_questions(args.questions, args.max_questions)
@@ -264,6 +327,122 @@ def main():
             pipeline_b=pipeline_b,
             label_a=label_a,
             label_b=label_b,
+            phase=args.phase,
+            answers_file=args.answers_file,
+        )
+    
+    elif args.mode == "round-robin":
+        if not args.config_b:
+            print("❌ Round-robin mode requires at least --config-b!")
+            sys.exit(1)
+        
+        print(f"🏆 Mode: Round-Robin Benchmark")
+        
+        # Determine labels and load configs
+        label_a = args.pipeline_type.upper()
+        
+        config_b = load_config(args.config_b)
+        label_b = args.pipeline_type_b.upper()
+        if label_b == label_a:
+            label_b = f"{label_b}_B"
+            
+        label_c = None
+        if args.config_c:
+            config_c = load_config(args.config_c)
+            label_c = args.pipeline_type_c.upper()
+            if label_c in (label_a, label_b):
+                label_c = f"{label_c}_C"
+                
+        all_labels = [label_a, label_b]
+        if label_c:
+            all_labels.append(label_c)
+            
+        # Build all pipelines
+        pipelines = None
+        if args.phase in ("all", "generate"):
+            pipelines = {}
+            print(f"🔧 Building Pipeline A: {config.llm.model_name} (Type: {label_a})")
+            pipelines[label_a] = build_pipeline(config, p_type=args.pipeline_type)
+            
+            print(f"🔧 Building Pipeline B: {config_b.llm.model_name} (Type: {label_b})")
+            pipelines[label_b] = build_pipeline(config_b, p_type=args.pipeline_type_b)
+            
+            if args.config_c:
+                print(f"🔧 Building Pipeline C: {config_c.llm.model_name} (Type: {label_c})")
+                pipelines[label_c] = build_pipeline(config_c, p_type=args.pipeline_type_c)
+        
+        # Load questions
+        dataset = load_questions(args.questions, args.max_questions)
+        print(f"📝 Loaded {len(dataset)} questions")
+        
+        if not dataset:
+            print("❌ No questions with ground_truth found!")
+            sys.exit(1)
+        
+        # Run round-robin
+        result = runner.run_round_robin(
+            dataset=dataset,
+            pipelines=pipelines,
+            labels=all_labels,
+            phase=args.phase,
+            answers_file=args.answers_file,
+        )
+    
+    elif args.mode == "compare-rubric":
+        if not args.config_b:
+            print("❌ Compare-rubric mode requires at least --config-b!")
+            sys.exit(1)
+        
+        print(f"📊 Mode: Compare Rubric Benchmark")
+        
+        # Determine labels and load configs
+        label_a = args.pipeline_type.upper()
+        
+        config_b = load_config(args.config_b)
+        label_b = args.pipeline_type_b.upper()
+        if label_b == label_a:
+            label_b = f"{label_b}_B"
+            
+        label_c = None
+        if args.config_c:
+            config_c = load_config(args.config_c)
+            label_c = args.pipeline_type_c.upper()
+            if label_c in (label_a, label_b):
+                label_c = f"{label_c}_C"
+                
+        all_labels = [label_a, label_b]
+        if label_c:
+            all_labels.append(label_c)
+            
+        # Build all pipelines
+        pipelines = None
+        if args.phase in ("all", "generate"):
+            pipelines = {}
+            print(f"🔧 Building Pipeline A: {config.llm.model_name} (Type: {label_a})")
+            pipelines[label_a] = build_pipeline(config, p_type=args.pipeline_type)
+            
+            print(f"🔧 Building Pipeline B: {config_b.llm.model_name} (Type: {label_b})")
+            pipelines[label_b] = build_pipeline(config_b, p_type=args.pipeline_type_b)
+            
+            if args.config_c:
+                print(f"🔧 Building Pipeline C: {config_c.llm.model_name} (Type: {label_c})")
+                pipelines[label_c] = build_pipeline(config_c, p_type=args.pipeline_type_c)
+        
+        # Load questions
+        dataset = load_questions(args.questions, args.max_questions)
+        print(f"📝 Loaded {len(dataset)} questions")
+        
+        if not dataset:
+            print("❌ No questions with ground_truth found!")
+            sys.exit(1)
+        
+        # Run compare rubric
+        result = runner.run_compare_rubric(
+            dataset=dataset,
+            pipelines=pipelines,
+            labels=all_labels,
+            phase=args.phase,
+            answers_file=args.answers_file,
         )
     
     elif args.mode == "gold-validate":

@@ -53,7 +53,7 @@ class KGRAGPipeline(BasePipeline):
     Adapter để chạy Knowledge Graph (KG) Chatbot dưới dạng BasePipeline
     cho phép hệ thống LLM Judge chấm điểm.
     """
-    def __init__(self, model_name: str = "llama-3.3-70b-versatile"):
+    def __init__(self, model_name: str = "llama-3.3-70b-versatile", api_key: Optional[str] = None):
         self.graph = Neo4jGraph(
             url=os.environ.get("NEO4J_URI", "bolt://localhost:7687"),
             username=os.environ.get("NEO4J_USERNAME", "neo4j"),
@@ -64,7 +64,7 @@ class KGRAGPipeline(BasePipeline):
 
         self.bot_llm = ChatGroq(
             model=model_name,
-            api_key=os.environ.get("GROQ_API_KEY"),
+            api_key=api_key or os.environ.get("GROQ_API_KEY"),
             temperature=0
         )
 

@@ -27,16 +27,17 @@ class BenchmarkResult(BaseModel):
 
 class JudgeRubricScore(BaseModel):
     """Kết quả chấm điểm theo rubric từ 1 lần judge."""
-    accuracy: int = Field(ge=0, le=5, description="Độ chính xác so với ground truth (0-5)")
+    correctness: int = Field(ge=0, le=5, description="Độ chính xác so với ground truth (0-5)")
     completeness: int = Field(ge=0, le=5, description="Độ đầy đủ các ý chính (0-5)")
-    evidence_support: int = Field(ge=0, le=5, description="Bằng chứng hỗ trợ từ context (0-5)")
-    hallucination: int = Field(ge=0, le=5, description="Không bịa đặt, 5=không bịa (0-5)")
+    relevance: int = Field(ge=0, le=5, description="Độ bám sát câu hỏi, không lan man (0-5)")
+    faithfulness: int = Field(ge=0, le=5, description="Độ tin cậy, suy ra từ context (0-5)")
+    context_quality: int = Field(ge=0, le=5, description="Chất lượng của retrieved context (0-5)")
     final_decision: str = Field(description="Pass hoặc Fail")
     explanation: str = Field(description="Giải thích ngắn gọn")
 
     @property
     def average_score(self) -> float:
-        return (self.accuracy + self.completeness + self.evidence_support + self.hallucination) / 4.0
+        return (self.correctness + self.completeness + self.relevance + self.faithfulness + self.context_quality) / 5.0
 
 
 class PairwiseResult(BaseModel):
@@ -63,4 +64,4 @@ class JudgeBenchmarkResult(BaseModel):
     rubric_results: List[Dict[str, Any]] = Field(default_factory=list)
     pairwise_results: Optional[List[Dict[str, Any]]] = None
     gold_case_accuracy: Optional[float] = None
-    summary_metrics: Dict[str, float] = Field(default_factory=dict)
+    summary_metrics: Dict[str, Any] = Field(default_factory=dict)

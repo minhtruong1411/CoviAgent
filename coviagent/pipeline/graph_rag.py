@@ -22,19 +22,14 @@ from coviagent.core.interfaces import BasePipeline, BaseRetriever
 logger = logging.getLogger(__name__)
 
 DEFAULT_GRAPHRAG_PROMPT = (
-    "Bạn là một trợ lý y tế chuyên nghiệp về COVID-19.\n\n"
-    "NGUYÊN TẮC BẮT BUỘC:\n"
-    "- CHỈ sử dụng thông tin có trong ngữ cảnh bên dưới để trả lời.\n"
-    "- TUYỆT ĐỐI KHÔNG được bịa, suy luận, hoặc thêm bất kỳ thông tin y tế nào không có trong ngữ cảnh.\n"
-    "- Nếu ngữ cảnh hoàn toàn không chứa bất kỳ thông tin nào liên quan, hãy nói rõ: "
-    "'Tài liệu hiện tại không có thông tin về vấn đề này.'\n"
-    "- Trả lời bằng tiếng Việt, trình bày rõ ràng có cấu trúc.\n\n"
-    "Ngữ cảnh (từ Vector Search + Graph Expansion):\n"
+    "Bạn là một chuyên gia y tế AI. Dưới đây là thông tin được trích xuất từ tài liệu tham khảo.\n"
     "---------------------\n"
     "{context_str}\n"
-    "---------------------\n\n"
-    "Câu hỏi: {query_str}\n"
-    "Trả lời (chỉ dựa trên ngữ cảnh ở trên): "
+    "---------------------\n"
+    "Dựa trên thông tin trên, hãy trả lời câu hỏi: {query_str}\n"
+    "Quy tắc:\n"
+    "- Chỉ sử dụng thông tin trong ngữ cảnh.\n"
+    "- Nếu không có thông tin, hãy nói 'Tôi không tìm thấy thông tin'.\n"
 )
 
 
@@ -121,26 +116,29 @@ class GraphRAGPipeline(BasePipeline):
             # We use CONTAINS with a short substring to increase match probability.
             seed_snippets = []
             for text in seed_texts:
-                # Tìm dòng đầu tiên dài hơn 15 ký tự để tránh lỗi newline (\n) giữa Qdrant và Neo4j
-                lines = [line.strip() for line in text.split('\n') if len(line.strip()) > 15]
-                if lines:
-                    snippet = lines[0][:40].replace("'", "\\'").replace('"', '\\"')
-                    if snippet not in seed_snippets:
-                        seed_snippets.append(snippet)
+                words = [w.strip(".,;:!?()[]{}") for w in text.split() if len(w) > 5]
+                if len(words) >= 3:
+                    snippet_clauses = []
+                    for w in words[:3]:
+                        w_clean = w.lower().replace("'", "").replace('"', "")
+                        snippet_clauses.append(f"toLower(c.text) CONTAINS '{w_clean}'")
+                    clause = " AND ".join(snippet_clauses)
+                    clause = f"({clause})"
+                    if clause not in seed_snippets:
+                        seed_snippets.append(clause)
             
             if not seed_snippets:
                 return []
             
-            where_clauses = " OR ".join(
-                f"c.text CONTAINS '{s}'" for s in seed_snippets
-            )
+            where_clauses = " OR ".join(seed_snippets)
             
             cypher = f"""
                 MATCH (c:Chunk)-[:HAS_ENTITY]->(e:__Entity__)
                 WHERE ({where_clauses})
-                MATCH (e)-[r]-(neighbor:__Entity__)
-                RETURN DISTINCT '[' + e.id + '] -(' + type(r) + ')-> [' + neighbor.id + ']' AS text
-                LIMIT {self.max_graph_chunks * 3}
+                MATCH (e)-[*1..{self.expand_hops}]-(neighbor:__Entity__)<-[:HAS_ENTITY]-(neighbor_chunk:Chunk)
+                WHERE neighbor_chunk.text <> c.text
+                RETURN DISTINCT neighbor_chunk.text AS text
+                LIMIT {self.max_graph_chunks}
             """
             
             with self.neo4j_driver.session(database=self.neo4j_database) as session:
@@ -156,15 +154,15 @@ class GraphRAGPipeline(BasePipeline):
                     MATCH (c:Chunk)
                     WHERE ({where_clauses})
                     WITH collect(c.text) AS matched
-                    MATCH (other:Chunk)-[:HAS_ENTITY]->(e:__Entity__)-[r]-(neighbor:__Entity__)
-                    WHERE NOT other.text IN matched
-                    WITH e, r, neighbor, matched,
+                    MATCH (other:Chunk)-[:HAS_ENTITY]->(e:__Entity__)-[*1..{self.expand_hops}]-(neighbor:__Entity__)<-[:HAS_ENTITY]-(neighbor_chunk:Chunk)
+                    WHERE NOT neighbor_chunk.text IN matched
+                    WITH neighbor_chunk, matched, other,
                          reduce(score = 0, m IN matched |
                             score + CASE WHEN other.text CONTAINS substring(m, 0, 30) THEN 1 ELSE 0 END
                          ) AS relevance
                     WHERE relevance > 0
-                    RETURN DISTINCT '[' + e.id + '] -(' + type(r) + ')-> [' + neighbor.id + ']' AS text
-                    LIMIT {self.max_graph_chunks * 3}
+                    RETURN DISTINCT neighbor_chunk.text AS text
+                    LIMIT {self.max_graph_chunks}
                 """
                 try:
                     with self.neo4j_driver.session(database=self.neo4j_database) as session:

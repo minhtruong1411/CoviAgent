@@ -118,9 +118,7 @@ def create_embedding(config: EmbeddingConfig) -> BaseEmbedding:
         return HuggingFaceEmbedding(
             model_name=config.model_name,
             device=device,
-            trust_remote_code=True,
-            # Tắt device_map auto của accelerate để tránh lỗi meta tensor
-            model_kwargs={"device_map": None}
+            trust_remote_code=True
         )
         
     elif provider == "gemini":

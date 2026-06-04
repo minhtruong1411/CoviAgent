@@ -1,0 +1,35 @@
+# ──────────────────────────────────────────────────────────
+# LLM-as-a-Judge Benchmark Configuration
+# ──────────────────────────────────────────────────────────
+# Usage:
+#   python scripts/run_judge_benchmark.py --config configs/judge_benchmark.yaml
+#   python scripts/run_judge_benchmark.py --config configs/judge_benchmark.yaml --mode pairwise --config-b configs/openrouter_hf.yaml
+#   python scripts/run_judge_benchmark.py --config configs/judge_benchmark.yaml --mode gold-validate
+
+# Pipeline under evaluation
+llm:
+  provider: "groq"
+  model_name: "llama-3.3-70b-versatile"
+  temperature: 0.0
+  api_key_env_var: "GROQ_API_KEY_1"
+
+embedding:
+  provider: "huggingface"
+  model_name: "BAAI/bge-small-en-v1.5"
+  dimension: 384
+
+retriever:
+  top_k: 5
+  collection_name: "medical_dialogue_v1"
+
+qdrant_url: "http://localhost:6333"
+
+# Judge configuration
+judge:
+  provider: "openrouter"
+  model_name: "moonshotai/kimi-k2.6:free"
+  temperature: 0.0
+  api_key_env_var: "OPENROUTER_API_KEY"
+  num_runs: 3              # Majority vote: 3 lần chấm
+  api_delay_seconds: 5.0   # OpenRouter free tier nên để delay 5s
+  pass_threshold: 3.0      # Trung bình >= 3.0 → Pass

@@ -1,0 +1,198 @@
+{
+    "one_hop_questions": [
+        {
+            "id": "Q_1H_01",
+            "question": "Tác nhân virus nào là nguyên nhân trực tiếp gây ra bệnh sốt virus Corona (COVID-19)?"
+        },
+        {
+            "id": "Q_1H_02",
+            "question": "Theo khuyến nghị, khoảng cách vật lý tối thiểu cần duy trì với người khác để phòng ngừa lây nhiễm COVID-19 là bao nhiêu mét?"
+        },
+        {
+            "id": "Q_1H_03",
+            "question": "Kể từ khi một người bị nhiễm virus, thời gian trung bình để các triệu chứng bắt đầu xuất hiện là bao lâu?"
+        },
+        {
+            "id": "Q_1H_04",
+            "question": "Loại xét nghiệm virus nào được tài liệu coi là 'tiêu chuẩn vàng' (gold standard) cho việc xét nghiệm COVID-19?"
+        },
+        {
+            "id": "Q_1H_05",
+            "question": "Tên của loại thuốc kháng thể đơn dòng dùng làm dự phòng trước phơi nhiễm được FDA cấp phép cho người suy giảm miễn dịch là gì?"
+        },
+        {
+            "id": "Q_1H_06",
+            "question": "Kể tên 4 nhóm bệnh nền được liệt kê cụ thể là có nguy cơ cao phát triển bệnh nghiêm trọng khi mắc COVID-19."
+        },
+        {
+            "id": "Q_1H_07",
+            "question": "Theo WHO, virus SARS-CoV-2 có thể lây truyền từ miệng hoặc mũi của người nhiễm bệnh qua những loại hạt lỏng nào?"
+        },
+        {
+            "id": "Q_1H_08",
+            "question": "Thời gian tối đa để các triệu chứng COVID-19 xuất hiện sau khi một người bị nhiễm virus là bao nhiêu ngày?"
+        },
+        {
+            "id": "Q_1H_09",
+            "question": "Xét nghiệm kháng nguyên (Antigen test) thông thường cho ra kết quả nhanh trong khoảng thời gian bao nhiêu phút?"
+        },
+        {
+            "id": "Q_1H_10",
+            "question": "Thuốc kháng virus dạng uống Paxlovid được cấu thành từ sự phối hợp của hai loại biệt dược nào?"
+        },
+        {
+            "id": "Q_1H_11",
+            "question": "Thuốc kháng virus Veklury (remdesivir) được đưa vào cơ thể người bệnh bằng hình thức hay phương pháp nào?"
+        },
+        {
+            "id": "Q_1H_12",
+            "question": "Thuốc kháng virus Molnupiravir còn có tên gọi biệt dược khác trong bảng danh mục điều trị là gì?"
+        },
+        {
+            "id": "Q_1H_13",
+            "question": "Thời gian truyền tĩnh mạch một liều thuốc kháng thể đơn dòng Pemgarda được quy định kéo dài trong bao nhiêu phút?"
+        },
+        {
+            "id": "Q_1H_14",
+            "question": "Để duy trì sự bảo vệ liên tục bằng thuốc Pemgarda, các liều bổ sung cần được dùng định kỳ sau mỗi bao nhiêu tháng?"
+        },
+        {
+            "id": "Q_1H_15",
+            "question": "Số điện thoại đường dây nóng của Tổng đài dịch vụ điều trị (Treatment Locator) được hhs.gov cung cấp là số nào?"
+        },
+        {
+            "id": "Q_1H_16",
+            "question": "Nếu một người khỏe mạnh chỉ gặp các triệu chứng COVID-19 ở mức độ nhẹ, tài liệu khuyên họ nên quản lý bệnh như thế nào?"
+        },
+        {
+            "id": "Q_1H_17",
+            "question": "Kể tên hai loại thuốc không kê đơn (OTC) được tài liệu gợi ý cụ thể để điều trị giảm các triệu chứng COVID-19 tại nhà."
+        },
+        {
+            "id": "Q_1H_18",
+            "question": "Kể tên 4 triệu chứng được phân loại vào nhóm 'Các triệu chứng phổ biến nhất' của bệnh COVID-19."
+        },
+        {
+            "id": "Q_1H_19",
+            "question": "Hiện tượng mất tiếng, mất khả năng vận động, hoặc lú lẫn được xếp vào nhóm triệu chứng nào của COVID-19?"
+        },
+        {
+            "id": "Q_1H_20",
+            "question": "Độ tuổi cụ thể nào của người cao tuổi được nhấn mạnh là có nguy cơ đặc biệt cao bị bệnh nặng?"
+        },
+        {
+            "id": "Q_1H_21",
+            "question": "Xét nghiệm tự thực hiện tại nhà (Self-tests) bản chất thuộc loại công nghệ xét nghiệm nào trong hai loại xét nghiệm virus chính?"
+        },
+        {
+            "id": "Q_1H_22",
+            "question": "Tổ chức nào cung cấp Hướng dẫn về Điều trị và Quản lý Bệnh nhân mắc COVID-19 cho các nhân viên y tế?"
+        },
+        {
+            "id": "Q_1H_23",
+            "question": "Tài liệu đề cập loại xét nghiệm nào có thể tiếp tục cho kết quả dương tính kéo dài lên đến 90 ngày sau khi nhiễm?"
+        },
+        {
+            "id": "Q_1H_24",
+            "question": "Đối tượng bệnh nhân nào có thể được bác sĩ cân nhắc chỉ định điều trị bổ sung bằng huyết tương tĩnh cốt (convalescent plasma)?"
+        }
+    ],
+    "multi_hop_questions": [
+        {
+            "id": "Q_MH_01",
+            "question": "Một người lớn mắc bệnh tim mạch và mới xuất hiện triệu chứng COVID-19 trong vòng 3 ngày. Dựa trên tài liệu, người này có thể sử dụng những loại thuốc kháng virus đường uống nào tại nhà, và cần lưu ý tác dụng phụ cùng đặc tính tương tác thuốc gì của Paxlovid?"
+        },
+        {
+            "id": "Q_MH_02",
+            "question": "Nếu một người từng có kết quả xét nghiệm dương tính lần đầu với COVID-19 cách đây 25 ngày và hiện tại xuất hiện triệu chứng mới, họ nên dùng loại xét nghiệm nào? Nếu kết quả âm tính, họ cần thực hiện lặp lại như thế nào theo khuyến nghị của FDA?"
+        },
+        {
+            "id": "Q_MH_03",
+            "question": "Một người không có triệu chứng lâm sàng muốn khẳng định chắc chắn mình không nhiễm COVID-19 bằng phương pháp tự xét nghiệm tại nhà. Họ phải thực hiện tối thiểu bao nhiêu lần xét nghiệm kháng nguyên, khoảng cách giữa các lần là bao lâu, và loại xét nghiệm nào có thể dùng để xác nhận lại?"
+        },
+        {
+            "id": "Q_MH_04",
+            "question": "So sánh về điều kiện thời gian bắt đầu điều trị (khung cửa sổ thời gian) kể từ khi khởi phát triệu chứng giữa hai loại thuốc kháng virus đường uống (Paxlovid, Lagevrio) và thuốc kháng virus dạng tiêm truyền tĩnh mạch Veklury."
+        },
+        {
+            "id": "Q_MH_05",
+            "question": "Tại sao CDC nhấn mạnh thuốc kháng virus không thể thay thế cho vắc-xin, và cơ chế hoạt động của thuốc kháng virus trong cơ thể khác biệt thế nào so với mục đích phòng ngừa của vắc-xin?"
+        },
+        {
+            "id": "Q_MH_06",
+            "question": "Hiện tượng 'COVID-19 Rebound' được định nghĩa kèm mốc thời gian cụ thể là gì? Dựa trên các nghiên cứu được trích dẫn, hiện tượng này có làm tăng nguy cơ tiến triển thành bệnh nghiêm trọng đối với người đã dùng thuốc kháng virus không?"
+        },
+        {
+            "id": "Q_MH_07",
+            "question": "Nếu một bệnh nhân có tiền sử xét nghiệm dương tính với COVID-19 trong khoảng thời gian từ 31 đến 90 ngày trước và hiện tại không có triệu chứng, FDA hướng dẫn họ sử dụng loại xét nghiệm nào để kiểm tra nhiễm trùng mới, và quy trình lặp lại xét nghiệm âm tính ra sao?"
+        },
+        {
+            "id": "Q_MH_08",
+            "question": "Một người bị suy giảm miễn dịch nghiêm trọng, nặng 95 pounds và tròn 13 tuổi có đủ điều kiện để nhận liệu pháp dự phòng trước phơi nhiễm Pemgarda không? Hãy phân tích các tiêu chí điều kiện liên quan đến độ tuổi, cân nặng và tình trạng sức khỏe của họ."
+        },
+        {
+            "id": "Q_MH_09",
+            "question": "Phân tích sự khác biệt về địa điểm thực hiện, nhân sự lấy mẫu và thời gian nhận kết quả thông thường giữa xét nghiệm tiêu chuẩn vàng NAAT (phòng thí nghiệm) và xét nghiệm kháng nguyên nhanh tại nhà."
+        },
+        {
+            "id": "Q_MH_10",
+            "question": "Những nhóm đối tượng nào được liệt kê là có nguy cơ cao bị bệnh nặng hoặc giảm đáp ứng với vắc-xin nên được tiêm bổ sung các liều vắc-xin COVID-19 trong mùa dịch?"
+        },
+        {
+            "id": "Q_MH_11",
+            "question": "Một bệnh nhân thuộc nhóm nguy cơ cao bị nhiễm COVID-19 nhưng chưa có kết quả xét nghiệm chính thức có được phép bắt đầu điều trị bằng thuốc kháng virus không? Bác sĩ cần lưu ý điều gì về giới hạn thời gian bắt đầu của các loại thuốc này?"
+        },
+        {
+            "id": "Q_MH_12",
+            "question": "Bệnh nhân có bảo hiểm y tế hoặc thuộc nhóm đối tượng thu nhập thấp/không có bảo hiểm có thể tìm kiếm hỗ trợ tài chính hoặc nhận dịch vụ xét nghiệm và thuốc kháng virus (Paxlovid, Lagevrio) miễn phí/giá rẻ qua những kênh hay chương trình nào?"
+        },
+        {
+            "id": "Q_MH_13",
+            "question": "Khi một người xuất hiện triệu chứng đau ngực và khó thở, họ được xếp vào nhóm triệu chứng nào? Tài liệu hướng dẫn họ cần thực hiện ngay hành động y tế khẩn cấp gì thay vì tự quản lý tại nhà?"
+        },
+        {
+            "id": "Q_MH_14",
+            "question": "Mô tả mối quan hệ giữa việc xuất hiện biến thể mới của virus SARS-CoV-2 với hiệu quả hoạt động của thuốc kháng thể đơn dòng Pemgarda, và cơ quan nào chịu trách nhiệm cập nhật thông tin này?"
+        },
+        {
+            "id": "Q_MH_15",
+            "question": "Tại sao tài liệu lại đưa ra cảnh báo nghiêm trọng về việc tự ý sử dụng các sản phẩm không được phê duyệt để điều trị COVID-19, và hậu quả tồi tệ nhất được ghi nhận đối với hành vi này là gì?"
+        },
+        {
+            "id": "Q_MH_16",
+            "question": "Đối với một người có kết quả xét nghiệm COVID-19 âm tính nhưng vẫn đang có các triệu chứng lâm sàng, tài liệu đưa ra những giả thuyết nguyên nhân y tế nào cho tình trạng này?"
+        },
+        {
+            "id": "Q_MH_17",
+            "question": "Đối với người bị nhiễm COVID-19 trong vòng 30 ngày trước và hiện tại hoàn toàn không có triệu chứng, FDA đưa ra lời khuyên hoặc khuyến nghị gì về việc tiếp tục xét nghiệm để phát hiện nhiễm trùng mới?"
+        },
+        {
+            "id": "Q_MH_18",
+            "question": "Sự khác biệt cốt lõi về mục tiêu tác động trong cơ thể giữa thuốc kháng thể đơn dòng dự phòng Pemgarda (dành cho người chưa nhiễm) và thuốc kháng virus dạng uống (dành cho người đã nhiễm) là gì?"
+        },
+        {
+            "id": "Q_MH_19",
+            "question": "Một người muốn thực hiện các biện pháp phòng ngừa tổng hợp ngoài việc tiêm vắc-xin. Dựa trên tài liệu của cả WHO và CDC, hãy tổng hợp các hành động cụ thể liên quan đến vệ sinh cá nhân và quản lý không khí trong nhà để giảm thiểu lây truyền."
+        },
+        {
+            "id": "Q_MH_20",
+            "question": "Khi một người có kết quả xét nghiệm COVID-19 dương tính, họ cần thực hiện chuỗi hành động nào được khuyến nghị liên quan đến việc bảo vệ cộng đồng, theo dõi sức khỏe bản thân và tiếp cận y tế nếu thuộc nhóm nguy cơ cao?"
+        },
+        {
+            "id": "Q_MH_21",
+            "question": "Nếu một người nghi ngờ mình mắc COVID-19, có nguy cơ cao tiến triển nặng nhưng lại không có bác sĩ chăm sóc sức khỏe riêng (healthcare provider), tài liệu hướng dẫn họ nên liên hệ với những cơ sở/đơn vị y tế thay thế nào ngay lập tức?"
+        },
+        {
+            "id": "Q_MH_22",
+            "question": "Đối với người bị nhiễm trùng và phải nhập viện điều trị, quyết định lựa chọn thuốc của nhân viên y tế sẽ thay đổi như thế nào so với việc điều trị tại nhà, và các nhóm thuốc bổ sung được cân nhắc sử dụng tại bệnh viện là gì?"
+        },
+        {
+            "id": "Q_MH_23",
+            "question": "Giải thích lý do tại sao một kết quả xét nghiệm kháng nguyên âm tính đơn lẻ (single âm tính) không đủ căn cứ để loại trừ hoàn toàn việc một người đang bị nhiễm virus SARS-CoV-2, đặc biệt là trong trạng thái lâm sàng nào?"
+        },
+        {
+            "id": "Q_MH_24",
+            "question": "Một người bị khuyết tật gặp khó khăn trong việc tìm kiếm địa điểm xét nghiệm hoặc mua bộ tự xét nghiệm COVID-19 có thể nhận sự trợ giúp từ tổ chức hoặc đường dây nóng chuyên biệt nào được đề cập trong tài liệu?"
+        }
+    ]
+}

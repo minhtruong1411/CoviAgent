@@ -43,12 +43,19 @@ def create_llm(config: LLMConfig) -> LLM:
     """
     provider = config.provider.lower().strip()
     
+    import os
+    actual_api_key = config.api_key
+    if not actual_api_key and getattr(config, "api_key_env_var", None):
+        actual_api_key = os.environ.get(config.api_key_env_var)
+    
     common_kwargs: Dict[str, Any] = {
         "model": config.model_name,
         "temperature": config.temperature,
     }
     if config.max_tokens is not None:
         common_kwargs["max_tokens"] = config.max_tokens
+    if actual_api_key:
+        common_kwargs["api_key"] = actual_api_key
 
     if provider == "openai":
         from llama_index.llms.openai import OpenAI

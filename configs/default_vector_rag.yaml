@@ -4,9 +4,9 @@ llm:
   temperature: 0.0
 
 embedding:
-  provider: "openai" # Options: openai, huggingface
-  model_name: "text-embedding-3-small" # Example HF: "BAAI/bge-small-en-v1.5"
-  dimension: 1536 # Remember to change this if using HF (e.g. 384 for bge-small)
+  provider: "huggingface" # Options: openai, huggingface
+  model_name: "BAAI/bge-small-en-v1.5" # Example HF: "BAAI/bge-small-en-v1.5"
+  dimension: 384 # Remember to change this if using HF (e.g. 384 for bge-small)
 
 retriever:
   top_k: 5

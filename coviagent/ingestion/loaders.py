@@ -10,7 +10,7 @@ def load_documents_from_dir(dir_path: Union[str, Path]) -> List[Document]:
     reader = SimpleDirectoryReader(
         input_dir=str(dir_path),
         recursive=True,
-        required_exts=[".txt", ".md", ".json", ".csv"]
+        required_exts=[".txt", ".md", ".json", ".csv", ".pdf"]
     )
     docs = reader.load_data()
     

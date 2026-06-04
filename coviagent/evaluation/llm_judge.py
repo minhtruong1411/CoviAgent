@@ -273,7 +273,7 @@ class LLMJudge:
         all_scores: List[JudgeRubricScore] = []
         
         for i in range(runs):
-            if i > 0:
+            if self.config.api_delay_seconds > 0:
                 time.sleep(self.config.api_delay_seconds)
             
             score = self.score_rubric(question, answer, ground_truth, contexts)

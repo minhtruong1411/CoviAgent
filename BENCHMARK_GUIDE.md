@@ -82,3 +82,32 @@ Hệ thống sẽ sinh lại riêng `graphrag` và tự động gộp (merge) ho
 python scripts/run_all_judges.py --phase judge --pipelines graphrag
 ```
 *Lưu ý: Hệ thống chấm điểm sử dụng Cache. Nếu trước đó bạn đã chấm xong `graphrag` và độ dài câu hỏi không đổi, nó có thể báo `Skipping...`. Để ép nó chấm lại từ đầu, bạn chỉ cần vào file `experiments/answers_all_cache.json` xóa đoạn dữ liệu của `graphrag` đi, hoặc xóa hẳn file cache đó nếu muốn chấm lại toàn bộ.*
+
+---
+
+## 6. Hướng dẫn làm việc nhóm (Scale lên tập dữ liệu lớn)
+
+Nếu bạn muốn chấm một bộ dữ liệu lớn (ví dụ: 80-100 câu) cho 3 phương pháp, tổng số Token mà mô hình Judge tiêu thụ sẽ vượt quá giới hạn miễn phí 100,000 Token/ngày của 1 tài khoản Groq.
+Giải pháp tối ưu là **Chia để trị (Distributed Benchmark)** cho nhiều thành viên cùng chạy.
+
+### Bước 6.1: Nhóm trưởng chia nhỏ dữ liệu
+1. Chia file `gold_cases.json` 80 câu thành 4 file nhỏ, mỗi file 20 câu (VD: `gold_cases_p1.json`, `gold_cases_p2.json`...).
+2. Gửi mỗi file cho một thành viên.
+
+### Bước 6.2: Các thành viên tự chạy trên máy cá nhân
+Mỗi thành viên cập nhật API Key Groq cá nhân vào file `.env` trên máy mình. Sau đó chạy 2 lệnh sau với tên file tương ứng (VD với thành viên nhận phần 1):
+
+```powershell
+# 1. Sinh đáp án cho 20 câu của mình
+python scripts/run_all_judges.py --phase generate --questions data/gold_cases_p1.json --answers-file experiments/answers_p1.json
+
+# 2. Chấm điểm cho 20 câu của mình
+python scripts/run_all_judges.py --phase judge --questions data/gold_cases_p1.json --answers-file experiments/answers_p1.json
+```
+*(Nếu quá trình bị gián đoạn do lỗi mạng, thành viên chỉ cần chạy lại đúng lệnh cũ, hệ thống sẽ tự động dùng Cache để chạy tiếp).*
+
+### Bước 6.3: Nộp bài và Gộp điểm
+1. Sau khi chạy xong, mỗi thành viên sẽ thu được một file Cache kết quả, ví dụ: `experiments/answers_p1_cache.json`.
+2. Mọi người gửi file Cache này cho Nhóm trưởng.
+3. Nhóm trưởng sẽ dùng một Script Gộp Điểm (Merge Script) để nối 4 file Cache lại thành 1 Bảng Xếp Hạng cuối cùng hoàn chỉnh cho cả 80 câu.
+*(Bằng cách này, nhóm bạn có thể Scale lên hàng nghìn câu hỏi mà không tốn một xu phí API nào!)*

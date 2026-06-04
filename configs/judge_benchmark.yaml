@@ -19,7 +19,7 @@ embedding:
   dimension: 384
 
 retriever:
-  top_k: 5
+  top_k: 1
   collection_name: "medical_dialogue_v1"
 
 qdrant_url: "http://localhost:6333"

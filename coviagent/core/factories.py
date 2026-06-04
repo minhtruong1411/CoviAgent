@@ -113,7 +113,15 @@ def create_embedding(config: EmbeddingConfig) -> BaseEmbedding:
     
     elif provider == "huggingface":
         from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-        return HuggingFaceEmbedding(model_name=config.model_name)
+        import torch
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        return HuggingFaceEmbedding(
+            model_name=config.model_name,
+            device=device,
+            trust_remote_code=True,
+            # Tắt device_map auto của accelerate để tránh lỗi meta tensor
+            model_kwargs={"device_map": None}
+        )
         
     elif provider == "gemini":
         from llama_index.embeddings.gemini import GeminiEmbedding

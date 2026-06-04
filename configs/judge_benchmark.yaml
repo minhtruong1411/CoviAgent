@@ -11,7 +11,7 @@ llm:
   provider: "groq"
   model_name: "llama-3.3-70b-versatile"
   temperature: 0.0
-  api_key_env_var: "GROQ_API_KEY_1"
+  api_key_env_var: "GROQ_API_KEY_2"
 
 embedding:
   provider: "huggingface"

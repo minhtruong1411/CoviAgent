@@ -120,54 +120,51 @@ class GraphRAGPipeline(BasePipeline):
             # then traverse relationships to find connected chunks.
             # We use CONTAINS with a short substring to increase match probability.
             seed_snippets = []
-            for text in seed_texts[:3]:  # Limit to top-3 seeds for efficiency
-                # Take first 80 chars as a matching snippet
-                snippet = text[:80].strip().replace("'", "\\'").replace('"', '\\"')
-                if len(snippet) > 20:
-                    seed_snippets.append(snippet)
+            for text in seed_texts:
+                # Tìm dòng đầu tiên dài hơn 15 ký tự để tránh lỗi newline (\n) giữa Qdrant và Neo4j
+                lines = [line.strip() for line in text.split('\n') if len(line.strip()) > 15]
+                if lines:
+                    snippet = lines[0][:40].replace("'", "\\'").replace('"', '\\"')
+                    if snippet not in seed_snippets:
+                        seed_snippets.append(snippet)
             
             if not seed_snippets:
                 return []
             
-            # Build Cypher: match seed chunks, then traverse 1-hop relationships
-            # to find connected nodes with text content.
             where_clauses = " OR ".join(
                 f"c.text CONTAINS '{s}'" for s in seed_snippets
             )
             
             cypher = f"""
-                MATCH (c:Chunk)-[r]-(neighbor)
+                MATCH (c:Chunk)-[:HAS_ENTITY]->(e:__Entity__)
                 WHERE ({where_clauses})
-                  AND neighbor.text IS NOT NULL
-                RETURN DISTINCT neighbor.text AS text
-                LIMIT {self.max_graph_chunks}
+                MATCH (e)-[r]-(neighbor:__Entity__)
+                RETURN DISTINCT '[' + e.id + '] -(' + type(r) + ')-> [' + neighbor.id + ']' AS text
+                LIMIT {self.max_graph_chunks * 3}
             """
             
             with self.neo4j_driver.session(database=self.neo4j_database) as session:
                 result = session.run(cypher)
                 for record in result:
                     text = record["text"]
-                    # Only add if not already in seed_texts (dedup)
                     if text and text not in seed_texts:
                         additional_texts.append(text)
             
-            # If no relationship-based expansion found, try a fallback:
-            # Find chunks that share keywords with the seed chunks
+            # If no graph triples found via exact match, try fallback keyword match
             if not additional_texts and seed_snippets:
-                # Extract key terms from seed snippets for keyword search
                 fallback_cypher = f"""
                     MATCH (c:Chunk)
                     WHERE ({where_clauses})
                     WITH collect(c.text) AS matched
-                    MATCH (other:Chunk)
+                    MATCH (other:Chunk)-[:HAS_ENTITY]->(e:__Entity__)-[r]-(neighbor:__Entity__)
                     WHERE NOT other.text IN matched
-                    WITH other, matched,
+                    WITH e, r, neighbor, matched,
                          reduce(score = 0, m IN matched |
                             score + CASE WHEN other.text CONTAINS substring(m, 0, 30) THEN 1 ELSE 0 END
                          ) AS relevance
                     WHERE relevance > 0
-                    RETURN DISTINCT other.text AS text
-                    LIMIT {self.max_graph_chunks}
+                    RETURN DISTINCT '[' + e.id + '] -(' + type(r) + ')-> [' + neighbor.id + ']' AS text
+                    LIMIT {self.max_graph_chunks * 3}
                 """
                 try:
                     with self.neo4j_driver.session(database=self.neo4j_database) as session:

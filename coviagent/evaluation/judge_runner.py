@@ -9,6 +9,7 @@ Supports 3 modes:
 Outputs JSON + CSV reports to the experiments directory.
 """
 
+import os
 import json
 import csv
 import datetime
@@ -342,12 +343,12 @@ class JudgeBenchmarkRunner:
         
         n = len(rubric_results)
         
-        avg_correctness = sum(r["correctness"] for r in rubric_results) / n
-        avg_completeness = sum(r["completeness"] for r in rubric_results) / n
-        avg_relevance = sum(r["relevance"] for r in rubric_results) / n
-        avg_faithfulness = sum(r["faithfulness"] for r in rubric_results) / n
-        avg_context_quality = sum(r["context_quality"] for r in rubric_results) / n
-        avg_overall = sum(r["average_score"] for r in rubric_results) / n
+        avg_correctness = sum(r.get("correctness", 0) for r in rubric_results) / n
+        avg_completeness = sum(r.get("completeness", 0) for r in rubric_results) / n
+        avg_relevance = sum(r.get("relevance", 0) for r in rubric_results) / n
+        avg_faithfulness = sum(r.get("faithfulness", 0) for r in rubric_results) / n
+        avg_context_quality = sum(r.get("context_quality", 0) for r in rubric_results) / n
+        avg_overall = (avg_correctness + avg_completeness + avg_relevance + avg_faithfulness + avg_context_quality) / 5.0
         
         pass_count = sum(1 for r in rubric_results if r["final_decision"] == "Pass")
         pass_rate = pass_count / n
@@ -655,6 +656,15 @@ class JudgeBenchmarkRunner:
         if phase in ("all", "generate"):
             print(f"\n🔄 GENERATE PHASE (Compare Rubric): {len(pipeline_labels)} pipelines")
             
+            # Load existing generated answers if available
+            if os.path.exists(answers_file):
+                try:
+                    with open(answers_file, "r", encoding="utf-8") as f:
+                        all_generated = json.load(f)
+                        print(f"📁 Loaded existing answers from {answers_file} for merging")
+                except Exception as e:
+                    print(f"⚠️ Could not load existing answers: {e}")
+            
             for label in pipeline_labels:
                 pipeline = pipelines[label]
                 all_generated[label] = []
@@ -697,10 +707,20 @@ class JudgeBenchmarkRunner:
 
         # Evaluate each pipeline
         all_results = {}
+        cache_file = answers_file.replace(".json", "_cache.json")
+        if os.path.exists(cache_file):
+            print(f"📁 Loading cached intermediate results from {cache_file}")
+            with open(cache_file, "r", encoding="utf-8") as f:
+                all_results = json.load(f)
+
         for label in pipeline_labels:
+            gen_data = all_generated.get(label, [])
+            if label in all_results and len(all_results[label]) == len(gen_data):
+                print(f"✅ Skipping {label} (already evaluated in cache)")
+                continue
+                
             print(f"🧑‍⚖️ Evaluating {label}...")
             rubric_results = []
-            gen_data = all_generated.get(label, [])
             
             for gen in tqdm(gen_data, desc=f"Judging {label}"):
                 agg_score, _ = self.judge.score_rubric_majority(
@@ -721,6 +741,10 @@ class JudgeBenchmarkRunner:
                 
             all_results[label] = rubric_results
             
+            # Save to cache immediately after finishing one pipeline
+            with open(cache_file, "w", encoding="utf-8") as f:
+                json.dump(all_results, f, ensure_ascii=False, indent=2)
+            
         # Combine results
         combined_rubric_results = []
         summary_by_pipeline = {}
@@ -730,11 +754,11 @@ class JudgeBenchmarkRunner:
             summary_by_pipeline[label] = self._compute_summary_metrics(results)
             
         # Determine ranking based on average overall score
-        ranking = sorted(pipeline_labels, key=lambda x: summary_by_pipeline[x].get("avg_overall_score", 0), reverse=True)
+        ranking = sorted(list(all_results.keys()), key=lambda x: summary_by_pipeline[x].get("avg_overall_score", 0), reverse=True)
         
         summary = {
             "total_questions": len(dataset),
-            "pipelines_evaluated": pipeline_labels,
+            "pipelines_evaluated": list(all_results.keys()),
             "ranking": ranking,
             "pipeline_summaries": summary_by_pipeline
         }

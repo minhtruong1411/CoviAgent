@@ -389,29 +389,24 @@ def main():
         )
     
     elif args.mode == "compare-rubric":
-        if not args.config_b:
-            print("❌ Compare-rubric mode requires at least --config-b!")
-            sys.exit(1)
-        
         print(f"📊 Mode: Compare Rubric Benchmark")
         
         # Determine labels and load configs
         label_a = args.pipeline_type.upper()
+        all_labels = [label_a]
         
-        config_b = load_config(args.config_b)
-        label_b = args.pipeline_type_b.upper()
-        if label_b == label_a:
-            label_b = f"{label_b}_B"
+        if args.config_b:
+            config_b = load_config(args.config_b)
+            label_b = args.pipeline_type_b.upper()
+            if label_b == label_a:
+                label_b = f"{label_b}_B"
+            all_labels.append(label_b)
             
-        label_c = None
         if args.config_c:
             config_c = load_config(args.config_c)
             label_c = args.pipeline_type_c.upper()
-            if label_c in (label_a, label_b):
+            if label_c in all_labels:
                 label_c = f"{label_c}_C"
-                
-        all_labels = [label_a, label_b]
-        if label_c:
             all_labels.append(label_c)
             
         # Build all pipelines
@@ -421,12 +416,13 @@ def main():
             print(f"🔧 Building Pipeline A: {config.llm.model_name} (Type: {label_a})")
             pipelines[label_a] = build_pipeline(config, p_type=args.pipeline_type)
             
-            print(f"🔧 Building Pipeline B: {config_b.llm.model_name} (Type: {label_b})")
-            pipelines[label_b] = build_pipeline(config_b, p_type=args.pipeline_type_b)
+            if args.config_b:
+                print(f"🔧 Building Pipeline B: {config_b.llm.model_name} (Type: {all_labels[1]})")
+                pipelines[all_labels[1]] = build_pipeline(config_b, p_type=args.pipeline_type_b)
             
             if args.config_c:
-                print(f"🔧 Building Pipeline C: {config_c.llm.model_name} (Type: {label_c})")
-                pipelines[label_c] = build_pipeline(config_c, p_type=args.pipeline_type_c)
+                print(f"🔧 Building Pipeline C: {config_c.llm.model_name} (Type: {all_labels[2]})")
+                pipelines[all_labels[2]] = build_pipeline(config_c, p_type=args.pipeline_type_c)
         
         # Load questions
         dataset = load_questions(args.questions, args.max_questions)

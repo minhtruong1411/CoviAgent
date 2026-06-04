@@ -68,9 +68,13 @@ def create_llm(config: LLMConfig) -> LLM:
     elif provider == "openrouter":
         from llama_index.llms.openrouter import OpenRouter
         return OpenRouter(**common_kwargs)
+        
+    elif provider == "gemini":
+        from llama_index.llms.gemini import Gemini
+        return Gemini(**common_kwargs)
     
     else:
-        supported = ["openai", "groq", "openrouter"]
+        supported = ["openai", "groq", "openrouter", "gemini"]
         raise ValueError(
             f"Unknown LLM provider: '{config.provider}'. "
             f"Supported providers: {supported}"

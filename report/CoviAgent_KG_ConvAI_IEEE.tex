@@ -1,0 +1,479 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+
+\usepackage[utf8]{inputenc} % Mã hóa đầu vào
+\usepackage[vietnamese]{babel} % Hỗ trợ ngôn ngữ tiếng Việt
+
+\usepackage{hyperref}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Nghiên cứu các hệ thống hội thoại sử dụng đồ thị tri thức - Nhóm 16\\}
+
+\author{\IEEEauthorblockN{Thạch Minh Quân}
+\IEEEauthorblockA{23021674}
+\and
+\IEEEauthorblockN{Lê Sĩ Thái Sơn}
+\IEEEauthorblockA{23021682}
+\and
+\IEEEauthorblockN{Vũ Nguyễn Trường Minh}
+\IEEEauthorblockA{23021638}
+\and
+\IEEEauthorblockN{Vũ Cao Phong}
+\IEEEauthorblockA{23021658}
+\and
+\IEEEauthorblockN{Phan Đăng Nhật}
+\IEEEauthorblockA{23021654}
+}
+
+\maketitle
+
+\begin{abstract}
+Sự phát triển nhanh chóng của các mô hình ngôn ngữ lớn (LLMs) đã thúc đẩy đáng kể năng lực của các hệ thống hội thoại tự động, cho phép tạo ra các tương tác tự nhiên, linh hoạt và giàu ngữ cảnh. Tuy nhiên, các hệ thống này vẫn tồn tại nhiều hạn chế cốt lõi, đặc biệt trong việc đảm bảo độ chính xác dữ kiện, khả năng suy luận phức tạp và tính minh bạch trong quá trình sinh phản hồi. Do được xây dựng dựa trên các mô hình xác suất học từ dữ liệu văn bản phi cấu trúc, LLMs có thể sinh ra các thông tin không chính xác nhưng có vẻ hợp lý (hallucination), đồng thời gặp khó khăn trong các bài toán yêu cầu suy luận đa bước và kết nối tri thức từ nhiều nguồn khác nhau.
+Trong báo cáo này, chúng tôi tập trung vào hướng tiếp cận tích hợp Đồ thị Tri thức (Knowledge Graph - KG) vào hệ thống Conversational AI nhằm khắc phục các hạn chế trên. Bằng cách khai thác tri thức có cấu trúc dưới dạng các thực thể và quan hệ, phương pháp đề xuất giúp cải thiện khả năng truy xuất thông tin chính xác, hỗ trợ suy luận logic và cung cấp các đường dẫn giải thích rõ ràng cho phản hồi của hệ thống. Đặc biệt, hướng tiếp cận này được xem xét trong bối cảnh bài toán hỏi đáp và hội thoại y tế, nơi yêu cầu cao về độ tin cậy và khả năng giải thích.
+Phương pháp được đánh giá dựa trên các tiêu chí như độ chính xác dữ kiện, khả năng suy luận đa bước và tính minh bạch của phản hồi, qua đó cho thấy tiềm năng của việc kết hợp Knowledge Graph và LLM trong việc xây dựng các hệ thống hội thoại đáng tin cậy, có khả năng ứng dụng thực tiễn cao.
+
+\end{abstract}
+
+% \begin{IEEEkeywords}
+% component, formatting, style, styling, insert
+% \end{IEEEkeywords}
+
+\section{GIỚI THIỆU}
+Trong những năm gần đây, các hệ thống Conversational AI đã đạt được những bước tiến vượt bậc nhờ sự xuất hiện của các mô hình ngôn ngữ lớn (LLMs). Những mô hình này cho phép hệ thống hiểu và sinh ngôn ngữ tự nhiên với độ trôi chảy cao, mở rộng khả năng ứng dụng trong nhiều lĩnh vực khác nhau. Tuy nhiên, bên cạnh những ưu điểm về khả năng biểu đạt, các hệ thống dựa trên LLM vẫn tồn tại những hạn chế quan trọng liên quan đến độ tin cậy và khả năng suy luận.
+
+Một trong những vấn đề nổi bật là hiện tượng ảo giác thông tin (hallucination), khi mô hình tạo ra các nội dung không chính xác nhưng vẫn mang tính thuyết phục. Nguyên nhân xuất phát từ cơ chế sinh ngôn ngữ dựa trên xác suất, khiến mô hình ưu tiên các chuỗi từ có khả năng xuất hiện cao thay vì đảm bảo tính đúng đắn tuyệt đối. Bên cạnh đó, các hệ thống này gặp khó khăn trong việc thực hiện suy luận đa bước (multi-hop reasoning), đặc biệt khi cần kết hợp nhiều mảnh thông tin rời rạc để đưa ra một kết luận hợp lý. Ngoài ra, tính chất “hộp đen” của LLM khiến cho việc giải thích và truy vết nguồn gốc của các phản hồi trở nên khó khăn, làm giảm mức độ tin cậy của hệ thống. Cuối cùng, các mô hình này thiếu khả năng tuân thủ chặt chẽ các ràng buộc logic hoặc quy tắc chuyên ngành, do không có cơ chế nội tại để biểu diễn và kiểm soát tri thức một cách có cấu trúc.
+
+Các phương pháp như Retrieval-Augmented Generation (RAG) đã được đề xuất nhằm cải thiện độ chính xác bằng cách bổ sung bước truy xuất tài liệu liên quan. Tuy nhiên, phần lớn các phương pháp này dựa trên độ tương đồng ngữ nghĩa và chưa đủ khả năng hỗ trợ các dạng suy luận phức tạp hoặc khai thác quan hệ giữa các thực thể.
+
+Để giải quyết các hạn chế trên, một hướng tiếp cận tiềm năng là tích hợp Đồ thị Tri thức (Knowledge Graph - KG) vào hệ thống Conversational AI. Knowledge Graph cho phép biểu diễn tri thức dưới dạng các thực thể và quan hệ có cấu trúc, từ đó hỗ trợ việc tổ chức, truy xuất và suy luận thông tin một cách hiệu quả. Thông qua việc kết hợp giữa khả năng sinh ngôn ngữ của LLM và khả năng suy luận có cấu trúc của KG, hệ thống có thể cải thiện độ chính xác, thực hiện suy luận đa bước, đồng thời cung cấp các đường dẫn giải thích rõ ràng cho người dùng.
+
+Trong báo cáo này, chúng tôi nghiên cứu và đề xuất một hướng tiếp cận Conversational AI được tăng cường bởi Knowledge Graph, nhằm nâng cao khả năng suy luận, tính minh bạch và độ tin cậy của hệ thống. Đặc biệt, chúng tôi định hướng áp dụng phương pháp này cho bài toán hỏi đáp và hội thoại trong lĩnh vực y tế, nơi yêu cầu cao về độ chính xác và khả năng giải thích. Bài toán đặt ra là xây dựng một hệ thống có khả năng tiếp nhận câu hỏi từ người dùng, truy xuất và tổng hợp thông tin từ nhiều nguồn tri thức y khoa, đồng thời thực hiện suy luận đa bước để đưa ra câu trả lời phù hợp và có căn cứ rõ ràng.
+
+Các đóng góp chính của báo cáo bao gồm: (1) phân tích các hạn chế của các hệ thống hội thoại dựa trên LLM, (2) trình bày vai trò của Knowledge Graph trong việc khắc phục các hạn chế này, và (3) đề xuất một hướng tích hợp KG vào kiến trúc Conversational AI hướng tới bài toán hỏi đáp y tế.
+ 
+
+\section{NGHIÊN CỨU BÀI BÁO LIÊN QUAN}
+\subsection{Taxonomy: Phân loại các hướng kết hợp LLMs và Knowledge Graphs}
+
+Sự giao thoa giữa sức mạnh xử lý ngôn ngữ tự nhiên của LLMs và độ chính xác cấu trúc của Knowledge Graphs (KG) đã định hình nên ba hướng nghiên cứu cốt lõi. Sự phân loại này giúp làm rõ các chiến lược kỹ thuật nhằm khắc phục điểm yếu của từng mô hình khi ứng dụng vào hệ thống y khoa:
+
+\begin{itemize}
+    \item KG-enhanced LLMs (LLM được tăng cường bởi KG): Hướng tiếp cận này sử dụng KG như một kho tri thức bên ngoài đáng tin cậy để can thiệp vào quá trình suy luận (inference) hoặc huấn luyện (fine-tuning) của LLM. Quá trình này ép LLM sử dụng dữ kiện chuẩn xác để tránh ảo giác. Điểm mạnh của hệ thống là cải thiện tính chính xác dữ kiện rõ rệt, nhưng nhược điểm là việc chuyển đổi cấu trúc đồ thị thành văn bản tuyến tính thường làm mất thông tin liên kết sâu và dễ gây quá tải giới hạn ngữ cảnh. Phương pháp này phù hợp cho các hệ thống hỏi đáp y tế (QA) dạng đơn chặng.
+    \item LLM-augmented KGs (KG được hỗ trợ bởi LLM): Phương pháp này đảo ngược mô hình trên, sử dụng sức mạnh hiểu ngữ nghĩa của LLMs để tự động hóa các tác vụ xây dựng KG từ văn bản y khoa phi cấu trúc, bao gồm nhận dạng thực thể và trích xuất quan hệ. Dù giúp mở rộng quy mô xây dựng đồ thị với chi phí thấp, phương pháp này lại phụ thuộc hoàn toàn vào độ chính xác của LLM. Nếu LLM sinh ảo giác ra các quan hệ không tồn tại, KG sẽ bị ô nhiễm dữ liệu. Do đó, hướng đi này chủ yếu phù hợp làm nền tảng chuẩn bị dữ liệu ngoại tuyến (Offline Preparation) thay vì dùng trực tiếp để sinh hội thoại.
+    \item GraphRAG (Graph Retrieval-Augmented Generation): Đây là sự tiến hóa sâu sắc của RAG truyền thống. Thay vì chỉ truy xuất văn bản phẳng, GraphRAG lập chỉ mục dữ liệu dưới dạng đồ thị, cho phép sử dụng thuật toán duyệt đồ thị để thực hiện suy luận đa chặng trước khi đưa cho LLM tổng hợp. Ưu điểm vượt trội là khả năng nắm bắt bối cảnh toàn cục và xuất sắc trong suy luận bắc cầu. Nhược điểm chính là chi phí tính toán và độ trễ cao khi thực thi thuật toán trên đồ thị trong thời gian thực.
+\end{itemize}
+
+
+\subsection{Phân tích các Paper tiêu biểu}
+
+Để làm rõ phương pháp luận và những thách thức khi triển khai vào môi trường y khoa thực tế, ba nghiên cứu mang tính bước ngoặt đã được phân tích chuyên sâu:
+\subsubsection{SURGE (Knowledge Graph-Augmented Language Models for Knowledge-Grounded Dialogue Generation \cite{kang2023knowledge})}
+\begin{itemize}
+    \item Nghiên cứu này đề xuất khung làm việc SURGE nhằm buộc mô hình sinh hội thoại phải phản ánh trung thực tri thức từ KG.
+    \item Hệ thống can thiệp sâu vào cấu trúc nội tại của mô hình ngôn ngữ bằng cách làm nhiễu vector nhúng từ của LLM thông qua thông tin của đồ thị con đã trích xuất, kết hợp với phương pháp học đối chiếu (Contrastive Learning).
+    \item Dù đảm bảo tính nhất quán cao giữa đồ thị và văn bản sinh ra, SURGE bộc lộ điểm yếu trong y tế khi quá phụ thuộc vào thuật toán trích xuất đồ thị con cục bộ.
+    \item Trong hội thoại y tế đa chặng, ngữ cảnh thay đổi liên tục khiến hệ thống dễ bị cứng nhắc.
+    \item Việc hòa trộn kiến thức vào không gian vector ẩn cũng làm hệ thống mất đi khả năng truy vết (traceability) tường minh bằng văn bản tự nhiên.
+\end{itemize}
+
+
+\subsubsection{DialoKG (Knowledge-Structure Aware Task-Oriented Dialogue Generation \cite{rony2022dialokg}}
+\begin{itemize}
+    \item DialoKG tích hợp dữ liệu quan hệ có cấu trúc trực tiếp vào bộ giải mã Transformer bằng cách tuyến tính hóa các bộ ba đồ thị (triples) cùng lịch sử hội thoại.
+    \item Hệ thống thiết kế 5 lớp nhúng riêng biệt và sử dụng mô đun "Graph Weight Computer" để tạo Mặt nạ chú ý có trọng số theo đồ thị nhằm điều khiển cơ chế self-attention của LLM.
+    \item Mặc dù loại bỏ được các phản hồi dạng khuôn mẫu và sinh ngôn ngữ tự nhiên, việc tuyến tính hóa một đồ thị y khoa dày đặc thành chuỗi 1 chiều tạo ra nút thắt cổ chai nghiêm trọng về giới hạn độ dài.
+    \item Thêm vào đó, thuật toán xáo trộn (shuffling) các bộ ba khiến hệ thống gần như không thể thực hiện phép suy luận đa chặng có định hướng.
+\end{itemize}
+
+
+\subsubsection{GraphRAG Framework (Graph Retrieval-Augmented Generation: A Survey \cite{peng2025graph}}
+\begin{itemize}
+    \item Nghiên cứu này hệ thống hóa toàn bộ vòng đời của GraphRAG qua ba giai đoạn: G-Indexing, G-Retrieval, và G-Generation.
+    \item Sự kết hợp giữa tìm kiếm bằng thuật toán duyệt đồ thị và định tuyến ngữ nghĩa cho phép hệ thống tìm ra các chuỗi liên kết sâu sắc mà tìm kiếm vector thuần túy không thể phát hiện, tỏ ra vô cùng xuất sắc trong việc suy luận đa chặng.
+    \item Tuy nhiên, độ phức tạp tính toán của GraphRAG cực kỳ cao, gây chậm trễ trong hội thoại thời gian thực.
+    \item Hầu hết các hệ thống GraphRAG hiện nay cũng chưa tích hợp phương pháp đảm bảo các đường dẫn truy xuất tuân thủ nghiêm ngặt các quy tắc nhân quả lâm sàng.
+\end{itemize}
+
+
+\subsection{Khoảng trống Nghiên cứu (Research Gap)}
+
+Dù các hệ thống tích hợp KG đã đạt nhiều bước tiến, vẫn tồn tại những lỗ hổng mang tính cấu trúc khi áp dụng vào môi trường hội thoại y tế thực tế:
+\begin{itemize}
+    \item Thiếu cơ chế suy luận đa chặng truy vết được: Các mô hình thường trộn lẫn cấu trúc tri thức đồ thị vào không gian vector ẩn hoặc dựa vào các thuật toán gom cụm thiếu tính giải thích, biến quá trình chẩn đoán thành một "hộp đen" nguy hiểm mà bác sĩ không thể kiểm chứng.
+    \item Khó khăn trước sự biến đổi ngữ cảnh đa chặng: Khi bệnh nhân liên tục cung cấp thêm triệu chứng hoặc tiền sử y tế mới, các mô hình thường đánh mất sự liên kết với các đồ thị con tĩnh đã trích xuất ở lượt đầu, dẫn đến lời khuyên đứt gãy và mâu thuẫn.
+    \item Thiếu vắng hệ thống ràng buộc y khoa cứng: Gần như toàn bộ các cấu trúc đồ thị hiện nay chưa tích hợp các ràng buộc để đảm bảo tính hợp lệ y khoa (ví dụ: quy tắc tuyệt đối cấm nối trực tiếp một triệu chứng với phương pháp điều trị mà bỏ qua bệnh lý trung gian). Điều này khiến hệ thống đối mặt với nguy cơ tự tạo ra "ảo giác logic" chết người từ những mối tương quan thống kê giả mạo.
+\end{itemize}
+
+
+\section{PHƯƠNG PHÁP ĐỀ XUẤT}
+Knowledge Graph-enhanced Conversational AI có thể được xem như một mô hình hội thoại trong đó hệ thống không chỉ dựa vào ngôn ngữ tự nhiên và tham số của mô hình sinh, mà còn khai thác một nguồn tri thức có cấu trúc để định hướng suy luận và kiểm soát đầu ra. Trong miền y tế, điều này đặc biệt quan trọng vì câu trả lời của hệ thống không chỉ cần có tính tự nhiên về mặt hội thoại, mà còn phải đảm bảo tính nhất quán với tri thức chuyên môn, tính giải thích được, và đặc biệt là tính an toàn. Do đó, thay vì xem Knowledge Graph (KG) như một thành phần phụ trợ đơn thuần, cách tiếp cận trong đề tài này xem KG như một lớp suy luận có cấu trúc, đóng vai trò trung gian giữa đầu vào ngôn ngữ của người dùng và đầu ra sinh bởi mô hình ngôn ngữ.
+
+Về mặt khái quát, hệ thống được thiết kế theo mô hình ba tầng gồm: (i) tầng hiểu ngôn ngữ đầu vào, (ii) tầng truy xuất và suy luận trên KG, và (iii) tầng sinh phản hồi tự nhiên. Khi người dùng đưa vào một truy vấn hội thoại, hệ thống trước hết nhận diện các thực thể y khoa và ý định chính trong phát biểu. Sau đó, các thực thể này được ánh xạ vào KG để truy xuất các nút và cạnh liên quan, từ đó tạo ra một tập ứng viên có tính ràng buộc về mặt tri thức. Cuối cùng, mô hình ngôn ngữ sử dụng ngữ cảnh hội thoại cùng với thông tin trích xuất từ KG để sinh câu trả lời hoàn chỉnh, kèm giải thích hoặc cảnh báo nếu cần.
+
+Cách thiết kế này nhằm tận dụng điểm mạnh của từng thành phần: mô hình ngôn ngữ đảm nhiệm khả năng hiểu và diễn đạt ngôn ngữ tự nhiên; KG đảm nhiệm vai trò lưu trữ tri thức có cấu trúc, kiểm tra ràng buộc, và cung cấp đường suy luận; còn lớp điều phối trung gian giúp kết hợp hai nguồn thông tin này thành một hệ thống hội thoại có tính giải thích và kiểm soát tốt hơn so với mô hình hội thoại thuần túy.
+
+Bài toán có thể được mô hình hóa như sau: với mỗi lượt hội thoại, hệ thống nhận đầu vào là một chuỗi văn bản $x$, có thể bao gồm triệu chứng, bệnh nền, thuốc đang sử dụng, hoặc câu hỏi y tế từ người dùng. Mục tiêu là sinh ra phản hồi $y$ sao cho phản hồi này vừa phù hợp về mặt ngữ nghĩa và hội thoại, vừa nhất quán với tri thức y khoa trong KG. Thay vì học trực tiếp ánh xạ từ $x \rightarrow y$ như các mô hình hội thoại truyền thống, phương pháp đề xuất tách quá trình này thành hai bước: xác định tập tri thức liên quan $K_x$ từ KG dựa trên truy vấn $x$, sau đó sinh phản hồi có điều kiện trên cả ngữ cảnh hội thoại và tri thức truy xuất được. Khi đó, đầu ra không chỉ phụ thuộc vào ngôn ngữ đầu vào mà còn phụ thuộc vào các ràng buộc do KG cung cấp.
+
+Hình \ref{fig:process} mô tả quy trình xử lý của hệ thống được chia thành bốn giai đoạn:
+\begin{itemize}
+    \item Hiểu đầu vào hội thoại: hệ thống thực hiện phân tích đầu vào để xác định các thực thể y khoa, ý định người dùng, và ngữ cảnh liên quan. Trong bài toán y tế, các thực thể quan trọng thường bao gồm triệu chứng, bệnh, thuốc, và điều kiện sử dụng thuốc. Mục tiêu của bước này là tạo ra một biểu diễn có cấu trúc của truy vấn để phục vụ truy xuất tri thức.
+    \item Ánh xạ sang KG và truy xuất tri thức: sau khi đã xác định được các thực thể chính, hệ thống truy xuất các nút và cạnh liên quan trong KG. Tùy vào bài toán cụ thể, truy xuất có thể được thực hiện bằng cách tìm các láng giềng 1-hop, 2-hop, hoặc khai thác các đường đi có ý nghĩa ngữ nghĩa giữa các thực thể. Kết quả của bước này là một tập con của KG (gọi là subgraph) chứa các thực thể và quan hệ đủ liên quan để hỗ trợ suy luận.
+    \item Suy luận có kiểm soát trên tri thức: subgraph thu được đóng vai trò như một vùng tri thức có kiểm soát. Hệ thống có thể dùng nó để xác minh tính hợp lệ của một đề xuất, loại bỏ các lựa chọn xung đột, hoặc tạo ra các chuỗi giải thích. Như vậy hệ thống sẽ tránh trả lời dựa trên suy đoán ngôn ngữ đơn thuần, và cân nhắc đến các tri thức trích xuất được từ Knowledge graph.
+    \item Sinh phản hồi tự nhiên: mô hình ngôn ngữ tạo ra phản hồi đầu ra dựa trên cả ngữ cảnh hội thoại và tri thức đã truy xuất. Phản hồi có thể bao gồm câu trả lời trực tiếp, giải thích ngắn gọn về lý do đề xuất, hoặc cảnh báo khi phát hiện xung đột giữa triệu chứng, bệnh nền và thuốc đang dùng.
+\end{itemize}
+
+\begin{figure}[!t]
+\centering
+\begin{tikzpicture}[
+  node distance=3mm,
+  box/.style={draw, rounded corners, fill=blue!8, align=center,
+              font=\scriptsize, inner sep=3pt, text width=0.60\columnwidth},
+  io/.style={draw, rounded corners, fill=orange!18, align=center,
+             font=\scriptsize, inner sep=3pt, text width=0.40\columnwidth},
+  kg/.style={draw, cylinder, shape border rotate=90, aspect=0.22,
+             fill=green!12, align=center, font=\scriptsize, inner sep=2pt,
+             text width=0.16\columnwidth, minimum height=11mm},
+  arr/.style={-{Stealth[length=2mm]}, semithick},
+  darr/.style={-{Stealth[length=2mm]}, semithick, dashed},
+]
+\node[io] (in) {User query};
+\node[box, below=of in] (s1) {\textbf{1.} Input understanding: medical entities + intent};
+\node[box, below=of s1] (s2) {\textbf{2.} Map \& retrieve KG $\rightarrow$ subgraph};
+\node[box, below=of s2] (s3) {\textbf{3.} Controlled reasoning on subgraph};
+\node[box, below=of s3] (s4) {\textbf{4.} Natural response generation (with explanation/warning)};
+\node[io, below=of s4] (out) {Response};
+\node[kg, right=4mm of s2] (graph) {KG};
+\foreach \x/\y in {in/s1,s1/s2,s2/s3,s3/s4,s4/out} \draw[arr] (\x)--(\y);
+\draw[darr] (graph.north) to[bend right=22] (s2.east);
+\draw[darr] (s3.east) to[bend left=22] (graph.south);
+\end{tikzpicture}
+\caption{Processing pipeline of a single-turn dialogue using the knowledge graph.}
+\label{fig:process}
+\end{figure}
+
+Trong phần thực nghiệm, nhóm hiện thực hóa hướng tiếp cận trên thành hệ thống \textbf{CoviAgent} --- một trợ lý hội thoại y tế trong miền COVID-19, hỗ trợ người dùng hỏi đáp về triệu chứng, biện pháp phòng ngừa, xét nghiệm và điều trị (thuốc kháng virus). Hệ thống trích xuất tri thức từ một Đồ thị Tri thức để định hướng câu trả lời, minh họa trực tiếp cho lĩnh vực KG-enhanced Conversational AI. Thay vì dùng một KG y khoa tổng quát có sẵn, nhóm \emph{tự xây dựng} đồ thị tri thức từ chính kho tài liệu COVID-19 và lập chỉ mục kép để phục vụ truy xuất hỗn hợp.
+
+\textbf{Chỉ mục kép (dual index).} Kho tài liệu được lập chỉ mục theo hai cách bổ trợ nhau. (i) \emph{Chỉ mục vector}: tài liệu được cắt thành các đoạn (chunk) và nhúng bằng mô hình embedding, lưu trong kho vector \textbf{Qdrant} để truy xuất theo độ tương đồng ngữ nghĩa. (ii) \emph{Đồ thị tri thức}: kho tài liệu được trích xuất thành đồ thị lưu trên \textbf{Neo4j}, gồm các nút \texttt{Chunk}, các nút thực thể \texttt{\_\_Entity\_\_} và --- quan trọng nhất --- các quan hệ mang ngữ nghĩa tri thức (\texttt{CAUSES}, \texttt{TREATS}, \texttt{PREVENTS}, \texttt{INCREASES\_RISK}, \texttt{DETECTS}, \dots). Chính lớp quan hệ này là thứ mà truy xuất vector thuần túy không biểu diễn được, và là nguồn để hệ thống thực hiện suy luận có cấu trúc cũng như cung cấp đường giải thích.
+
+\textbf{Đồ thị làm vùng tri thức có kiểm soát.} Khi xử lý một câu hỏi, hệ thống không duyệt toàn bộ KG mà chỉ trích ra một subgraph hẹp xoay quanh các thực thể liên quan đến câu hỏi (xem Mục~\ref{sec:graphrag} về cơ chế anchor và duyệt theo intent). Subgraph này đóng vai trò ``bộ lọc tri thức'': giảm độ phức tạp tính toán, đơn giản hóa truy vấn, gom đủ các thực thể/quan hệ liên quan (vd các thuốc kháng virus và đối tượng chỉ định), và thuận tiện cho việc giải thích kết quả. Bước phân giải thực thể (entity resolution) gộp các nút trùng nghĩa song ngữ về một nút chính để tránh phân mảnh quan hệ, qua đó nâng độ đầy đủ của câu trả lời.
+
+\textbf{Bộ dữ liệu kiểm thử (golden queries).} Để đánh giá định lượng, nhóm xây dựng một tập câu hỏi chuẩn hóa (golden queries) cho miền COVID-19, mỗi mục gồm câu hỏi, đáp án tham chiếu (ground truth) và nhãn kỳ vọng. Tập câu hỏi được \emph{phân tầng} theo loại (liệt kê/tổng hợp, so sánh, suy luận đa bước, factoid đơn bước) để có thể so sánh giữa hệ thống có KG và hệ thống truy xuất vector thuần túy trên từng dạng suy luận. Cách làm này giúp bài toán mang tính thực dụng: thay vì cần một pipeline huấn luyện phức tạp, hệ thống được đánh giá trực tiếp trên một tập testcase mang tính hội thoại, gần với thực tế sử dụng (chi tiết ở Mục~\ref{sec:eval}).
+
+Phương pháp triển khai demo có thể được mô tả bằng một pipeline gồm bốn mô-đun chính, được minh họa trong hình \ref{fig:modules}:
+\begin{itemize}
+    \item \textbf{Mô-đun tiền xử lý và xác định thực thể neo}: Đầu vào của người dùng được phân tích để phát hiện các thực thể y khoa quan trọng. Hệ thống xác định thực thể neo (anchor) từ hai nguồn bổ trợ: (a) thực thể được nhắc trực tiếp trong câu hỏi, và (b) thực thể gắn với các đoạn văn mà tìm kiếm vector trả về (bắc cầu qua độ phủ token). Mục tiêu là khoanh vùng đúng các thực thể trọng tâm (vd triệu chứng, thuốc, biện pháp phòng ngừa) để định hướng truy xuất.
+    \item \textbf{Mô-đun truy xuất hỗn hợp (vector + đồ thị Neo4j)}: Các thực thể neo được dùng để duyệt đồ thị Neo4j theo các quan hệ ngữ nghĩa (1--2 hop), thu về các bộ ba sự kiện (facts) và các đoạn văn chứng cứ gắn với những thực thể liên quan; đồng thời tìm kiếm vector cung cấp các đoạn ngữ nghĩa gần. Hai nguồn này hợp lại thành một pool ứng viên giàu thông tin hơn so với truy xuất vector đơn thuần. Đây là bước then chốt giúp KG đóng vai trò ``bộ lọc tri thức'' trước khi mô hình ngôn ngữ sinh câu trả lời.
+    \item \textbf{Mô-đun hợp nhất, rerank và kiểm soát ngữ cảnh}: Pool ứng viên được khử trùng, rồi rerank theo độ tương đồng với câu hỏi để giữ lại số đoạn văn tốt nhất (cân bằng ngân sách ngữ cảnh). Các facts đồ thị được xếp hạng theo \emph{ý định} (intent) suy từ câu hỏi và gộp các biến thể trùng khái niệm. Ràng buộc an toàn được thực thi ngay trong prompt sinh: nếu ngữ cảnh chứa cảnh báo/chống chỉ định cho đối tượng được hỏi, hệ thống phải nêu rõ để bảo đảm an toàn cho người dùng.
+    \item \textbf{Mô-đun sinh phản hồi}: Mô hình ngôn ngữ tạo phản hồi dựa trên cả đoạn văn tham khảo lẫn gợi ý facts đồ thị. Phản hồi gồm: câu trả lời chính, diễn giải tự nhiên bám sát tài liệu, và cảnh báo an toàn khi phù hợp. Prompt yêu cầu chỉ dùng thông tin trong ngữ cảnh (chống bịa đặt) và không sao chép nguyên văn các bộ ba đồ thị, giúp giữ vai trò định hướng của KG mà vẫn diễn đạt tự nhiên.
+\end{itemize}
+
+\begin{figure}[!t]
+\centering
+\begin{tikzpicture}[
+  node distance=3mm,
+  box/.style={draw, rounded corners, fill=blue!8, align=center,
+              font=\scriptsize, inner sep=3pt, text width=0.58\columnwidth},
+  io/.style={draw, rounded corners, fill=orange!18, align=center,
+             font=\scriptsize, inner sep=3pt, text width=0.34\columnwidth},
+  store/.style={draw, cylinder, shape border rotate=90, aspect=0.22,
+                fill=green!12, align=center, font=\scriptsize, inner sep=2pt,
+                text width=0.14\columnwidth, minimum height=9mm},
+  arr/.style={-{Stealth[length=2mm]}, semithick},
+  darr/.style={-{Stealth[length=2mm]}, semithick, dashed},
+]
+\node[io] (q) {Question};
+\node[box, below=of q] (m1) {\textbf{M1.} Preprocessing \& anchor entity detection};
+\node[box, below=of m1] (m2) {\textbf{M2.} Hybrid retrieval (vector + graph)};
+\node[box, below=of m2] (m3) {\textbf{M3.} Merge, rerank \& safety control};
+\node[box, below=of m3] (m4) {\textbf{M4.} Response generation};
+\node[io, below=of m4] (a) {Answer};
+\node[store, right=5mm of m2, yshift=5mm] (qd) {Qdrant};
+\node[store, right=5mm of m2, yshift=-8mm] (n4) {Neo4j};
+\foreach \x/\y in {q/m1,m1/m2,m2/m3,m3/m4,m4/a} \draw[arr] (\x)--(\y);
+\draw[darr] (qd.west) -- (m2.east);
+\draw[darr] (n4.west) -- (m2.east);
+\end{tikzpicture}
+\caption{Main modules of the CoviAgent medical dialogue system (COVID-19 domain): hybrid retrieval between the Qdrant vector store and the Neo4j knowledge graph.}
+\label{fig:modules}
+\end{figure}
+
+
+
+
+\section{THIẾT LẬP THỰC NGHIỆM}
+Để kiểm chứng định lượng vai trò của đồ thị tri thức, nhóm hiện thực hóa hệ thống và tiến hành một thực nghiệm so sánh có kiểm soát. Tư tưởng cốt lõi là: cố định toàn bộ các thành phần (Generator, lượng ngữ cảnh, nhiệt độ giải mã, Judge), chỉ thay đổi \emph{duy nhất một biến} là lớp truy xuất (retrieval), từ đó mọi chênh lệch về chất lượng đầu ra đều có thể quy về đóng góp của cấu trúc đồ thị.
+
+\subsection{Kho ngữ liệu và lập chỉ mục}
+Kho tài liệu gồm các văn bản y khoa (miền COVID-19: triệu chứng, phòng ngừa, xét nghiệm, điều trị). Tài liệu được cắt thành các đoạn (chunk) kích thước 512 token với độ chồng lấp 50 token, được nhúng bằng mô hình \texttt{BAAI/bge-small-en-v1.5} (384 chiều) và lưu trong kho vector \textbf{Qdrant} (collection \texttt{medical\_dialogue\_v1}).
+
+\subsection{Đồ thị tri thức trên Neo4j}
+Song song với chỉ mục vector, kho tài liệu được trích xuất thành một đồ thị tri thức lưu trên \textbf{Neo4j}, gồm các nút \texttt{Chunk} (đoạn văn gốc) và các nút thực thể \texttt{\_\_Entity\_\_}, nối với nhau qua quan hệ cấu trúc \texttt{HAS\_ENTITY}. Quan trọng nhất là các \emph{quan hệ mang ngữ nghĩa tri thức} giữa các thực thể: \texttt{CAUSES, TREATS, INDICATES, PREVENTS, INCREASES\_RISK, REDUCES\_RISK, MAY\_REQUIRE, DETECTS}. Đây chính là phần thông tin mà truy xuất vector thuần túy không biểu diễn được, ví dụ \texttt{(Paxlovid)-[TREATS]->(COVID-19)}.
+
+\subsection{Phân giải thực thể (Entity Resolution)}
+Do đồ thị được trích tự động từ ngữ liệu song ngữ (Việt/Anh), một khái niệm thường bị tách thành nhiều nút trùng nghĩa (số nhiều/ít, biến thể tên, bản dịch), làm phân mảnh quan hệ và giảm độ đầy đủ của GraphRAG. Nhóm áp dụng một bước làm sạch: gộp các nhóm biến thể đã được kiểm tra thủ công về một nút chính (canonical) bằng \texttt{apoc.refactor.mergeNodes} với \texttt{mergeRels:true}, đồng thời \emph{giữ phân biệt} các khái niệm khác bản chất (ví dụ không gộp bệnh \texttt{COVID-19} với virus \texttt{SARS-CoV-2}). Thao tác có tính lũy đẳng (idempotent) nên an toàn khi chạy lại.
+
+\subsection{Các mô hình sử dụng}
+Bảng~\ref{tab:models} liệt kê các mô hình. Điểm mấu chốt: \textbf{Generator} (Llama-3.3-70B) thuộc \emph{họ khác} với \textbf{Judge} (\texttt{gpt-oss-120b}) nhằm tránh \emph{self-preference bias} --- lỗi phổ biến nhất khi dùng LLM làm Judge (mô hình tự chấm cao cho văn phong của chính nó).
+
+\begin{table}[!t]
+\caption{Models used in the experiments}
+\label{tab:models}
+\centering
+\footnotesize
+\begin{tabular}{@{}p{0.24\columnwidth} p{0.40\columnwidth} p{0.20\columnwidth}@{}}
+\toprule
+\textbf{Role} & \textbf{Model} & \textbf{Platform} \\
+\midrule
+Generator (all 3 pipelines) & \texttt{llama-3.3-70b-versatile} & Groq \\
+Judge & \texttt{openai/gpt-oss-120b} & Groq \\
+Embedding & \texttt{bge-small-en-v1.5} (384-d) & HuggingFace \\
+Vector store & Qdrant & local \\
+Knowledge Graph & Neo4j (+APOC) & local \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Các tham số chính: Generator dùng \texttt{temperature}$=0$ (giải mã xác định); Judge dùng \texttt{temperature}$=0$, \texttt{num\_runs}$=3$ (biểu quyết đa số / majority vote), ngưỡng \texttt{pass\_threshold}$=3{,}0$. Tham số GraphRAG được \emph{ghim cố định}: \texttt{expand\_hops}$=2$, \texttt{max\_facts}$=25$, \texttt{max\_anchors}$=8$, \texttt{final\_chunks}$=5$, bật rerank và entity-grounding.
+
+\section{CÁC PIPELINE ĐƯỢC SO SÁNH}
+Cả ba pipeline đều hiện thực cùng một giao diện truy vấn trả về cặp \texttt{\{đáp án, ngữ cảnh\}} và dùng \emph{chung một} Generator, do đó khác biệt chỉ đến từ cách truy xuất. Hình~\ref{fig:pipelines} đối chiếu ba phương pháp này.
+
+\begin{figure*}[!t]
+\centering
+\begin{tikzpicture}[
+  pipe/.style={draw, rounded corners, fill=blue!8, align=center,
+               font=\footnotesize, inner sep=4pt, text width=44mm, minimum height=12mm},
+  gen/.style={draw, rounded corners, fill=green!10, align=center,
+              font=\footnotesize, inner sep=4pt, text width=30mm, minimum height=12mm},
+  io/.style={draw, rounded corners, fill=orange!18, align=center,
+             font=\footnotesize, inner sep=4pt, text width=16mm, minimum height=10mm},
+  arr/.style={-{Stealth[length=2mm]}, semithick},
+]
+\node[io] (q) {Question};
+\node[pipe, right=14mm of q] (g) {\textbf{GraphRAG} (proposed)\\ Vector (entry point) + Neo4j graph traversal $\rightarrow$ facts + evidence passages};
+\node[pipe, above=5mm of g] (v) {\textbf{Vector RAG} (baseline)\\ Qdrant: top-$k$ similar passages};
+\node[pipe, below=5mm of g] (k) {\textbf{KG-RAG} (Text-to-Cypher)\\ LLM generates Cypher $\rightarrow$ Neo4j $\rightarrow$ Chunk};
+\node[gen, right=16mm of g] (gen) {\textbf{Generator} (shared)\\ Llama-3.3-70B ($T{=}0$)};
+\node[io, right=12mm of gen] (a) {Answer};
+\foreach \p in {v,g,k}{%
+  \draw[arr] (q.east) -- (\p.west);
+  \draw[arr] (\p.east) -- (gen.west);
+}
+\draw[arr] (gen.east) -- (a.west);
+\end{tikzpicture}
+\caption{The three retrieval methods compared, sharing \emph{one} Generator: Vector RAG (baseline), KG-RAG (Text-to-Cypher), and hybrid GraphRAG (proposed). Since they differ only in the retrieval layer, any output-quality gap is attributable to the role of graph structure.}
+\label{fig:pipelines}
+\end{figure*}
+
+\subsection{Vector RAG (đường cơ sở)}
+Truy xuất top-$k$ đoạn theo độ tương đồng nhúng từ Qdrant, ghép vào prompt và sinh câu trả lời. Đơn giản, nhanh, nhưng không có khả năng tổng hợp thông tin xuyên nhiều đoạn.
+
+\subsection{KG-RAG (Text-to-Cypher)}
+Sử dụng \texttt{GraphCypherQAChain} (LangChain + Neo4j): một LLM sinh ra câu truy vấn Cypher từ câu hỏi tự nhiên, thực thi trên Neo4j để lấy các đoạn \texttt{Chunk} khớp từ khóa, rồi một LLM thứ hai tổng hợp đáp án. Phương pháp khai thác đồ thị trực tiếp nhưng nhạy cảm với chất lượng Cypher sinh ra và tốn nhiều lượt gọi LLM (dễ dính giới hạn tốc độ).
+
+\subsection{GraphRAG lai, hướng-thực-thể (đề xuất chính)}\label{sec:graphrag}
+Đây là đóng góp trọng tâm về mặt hiện thực. Luồng truy xuất gồm sáu bước, minh họa ở Hình~\ref{fig:graphrag}:
+\begin{enumerate}
+    \item \textbf{Tìm kiếm vector} (Qdrant): lấy một \emph{pool} ứng viên làm ``điểm vào''.
+    \item \textbf{Thực thể neo (anchor)}: xác định từ hai nguồn bổ trợ --- (a) thực thể được nhắc trực tiếp trong câu hỏi, và (b) thực thể gắn với các đoạn vector (bắc cầu qua độ phủ token, vì id/khoảng trắng giữa Qdrant và Neo4j khác nhau). Thực thể từ câu hỏi được ưu tiên tuyệt đối.
+    \item \textbf{Duyệt đồ thị}: từ anchor, duyệt theo các quan hệ ngữ nghĩa (1--2 hop) để thu các bộ ba \texttt{(chủ thể)-[quan hệ]->(đối tượng)}. Hệ thống lấy \emph{dư} facts rồi xếp hạng lại theo \emph{ý định} (intent) suy từ từ khóa câu hỏi (ví dụ ``triệu chứng'' $\rightarrow$ ưu tiên \texttt{CAUSES}; ``điều trị'' $\rightarrow$ \texttt{TREATS}).
+    \item \textbf{Đoạn neo-thực-thể}: kéo thêm các đoạn mô tả trực tiếp các thực thể neo, xếp theo \emph{số thực thể được hỏi mà đoạn đề cập} --- chìa khóa cho câu so sánh đa thực thể.
+    \item \textbf{Hợp nhất \& rerank}: gộp pool = đoạn vector $\cup$ đoạn neo-thực-thể $\cup$ đoạn lân cận, khử trùng, rồi rerank theo độ tương đồng với câu hỏi, giữ đúng \texttt{final\_chunks} đoạn tốt nhất (để cân bằng với Vector RAG).
+    \item \textbf{Sinh đáp án}: ghép [đoạn văn tham khảo] + [gợi ý facts đồ thị] vào prompt và gọi LLM.
+\end{enumerate}
+
+\begin{figure}[!t]
+\centering
+\begin{tikzpicture}[
+  node distance=3mm,
+  box/.style={draw, rounded corners, fill=blue!8, align=center,
+              font=\scriptsize, inner sep=3pt, text width=0.80\columnwidth},
+  io/.style={draw, rounded corners, fill=orange!18, align=center,
+             font=\scriptsize, inner sep=3pt, text width=0.5\columnwidth},
+  arr/.style={-{Stealth[length=2mm]}, semithick},
+]
+\node[io] (q) {Question};
+\node[box, below=of q] (vs) {\textbf{1.} Vector search (Qdrant) -- entry point};
+\node[box, below=of vs] (an) {\textbf{2.} Anchor entities (question + bridged)};
+\node[box, below=of an] (tr) {\textbf{3.} Graph traversal (1--2 hop) $\rightarrow$ intent-ranked facts};
+\node[box, below=of tr] (eg) {\textbf{4.} Entity-grounded + neighbor passages};
+\node[box, below=of eg] (rr) {\textbf{5.} Merge pool + rerank $\rightarrow$ \texttt{final\_chunks}};
+\node[box, below=of rr] (ge) {\textbf{6.} LLM generation (passages + facts)};
+\node[io, below=of ge] (a) {Answer};
+\foreach \x/\y in {q/vs,vs/an,an/tr,tr/eg,eg/rr,rr/ge,ge/a}
+  \draw[arr] (\x) -- (\y);
+\end{tikzpicture}
+\caption{Entity-driven hybrid GraphRAG retrieval flow. Vector search provides the entry point; the knowledge graph adds structured facts (step 3) and evidence passages (step 4) that pure vector retrieval misses.}
+\label{fig:graphrag}
+\end{figure}
+
+\section{PHƯƠNG PHÁP ĐÁNH GIÁ (BENCHMARK)}\label{sec:eval}
+Nhóm đánh giá bằng \textbf{LLM-as-a-Judge}: dùng một LLM mạnh, \emph{khác họ} với mô hình sinh, đóng vai giám khảo chấm điểm đáp án. Khung đánh giá gồm bốn cơ chế bổ trợ và một giao thức kiểm soát biến, tóm tắt ở Hình~\ref{fig:bench}.
+
+\subsection{Chấm điểm theo rubric 5 tiêu chí (0--5)}
+Mỗi đáp án được chấm 0--5 cho từng tiêu chí, kèm mô tả mức điểm chi tiết trong prompt:
+\begin{enumerate}
+    \item \textbf{Correctness} (độ chính xác) --- khớp với đáp án tham chiếu (ground truth).
+    \item \textbf{Completeness} (độ đầy đủ) --- bao phủ các ý chính.
+    \item \textbf{Relevance} (độ bám sát) --- đi thẳng, súc tích với câu hỏi.
+    \item \textbf{Faithfulness} (độ trung thực) --- mức suy ra hoàn toàn từ ngữ cảnh (chống bịa đặt).
+    \item \textbf{Context Quality} (chất lượng truy xuất) --- ngữ cảnh có đủ thông tin để trả lời không.
+\end{enumerate}
+Một đáp án \textbf{Pass} nếu trung bình 5 tiêu chí $\geq$ \texttt{pass\_threshold} $=3{,}0$.
+
+\subsection{Biểu quyết đa số (Majority Vote)}
+Để giảm phương sai của giám khảo, mỗi đáp án được chấm \texttt{num\_runs}$=3$ lần. Điểm tổng hợp cho mỗi tiêu chí lấy theo \emph{trung vị}, còn quyết định Pass/Fail lấy theo \emph{đa số}.
+
+\subsection{So sánh cặp mù (Blind Pairwise) chống thiên lệch}
+Ngoài điểm tuyệt đối, hai pipeline được so trực tiếp. Để khử thiên lệch: (i) \emph{ẩn danh} --- giám khảo không biết đáp án thuộc pipeline nào (chống \emph{identity bias}); (ii) \emph{đảo vị trí} --- chạy cả thứ tự AB và BA, chỉ công nhận người thắng khi cả hai lượt đồng thuận, nếu không sẽ chạy lượt phá hòa ngẫu nhiên hóa vị trí (chống \emph{position bias}). Có thể mở rộng thành \emph{round-robin} (mọi cặp) để lập bảng xếp hạng theo tỉ lệ thắng.
+
+\subsection{Kiểm định độ tin cậy giám khảo (Gold Validation)}
+Trước khi tin điểm, cho giám khảo chấm các trường hợp đã biết kết quả đúng/sai; chỉ khi mức đồng thuận đạt ngưỡng (đề xuất $\geq 80\%$) thì điểm benchmark mới được coi là đáng tin.
+
+\subsection{Benchmark cân bằng (Parity) --- kiểm soát biến}
+Đây là cốt lõi để kết quả ``bảo vệ được''. GraphRAG nạp vào LLM nhiều hơn Vector RAG (thêm facts + đoạn chứng cứ); nếu để Vector RAG đọc quá ít, GraphRAG thắng hiển nhiên \emph{vì đọc nhiều chữ hơn}, không chứng minh được ưu thế cấu trúc. Do đó nhóm: cân \emph{lượng đoạn văn ngang nhau} (Vector \texttt{top\_k}$=5$ vs.\ GraphRAG giữ \texttt{final\_chunks}$=5$); dùng chế độ \texttt{parity} (\emph{không} gọi LLM, miễn phí) để xác nhận số đoạn/facts/ký tự trung bình thực sự tương đương trước khi chấm; và \emph{kiểm chứng robustness} bằng cách cho Vector RAG \emph{dư} ngữ cảnh (\texttt{top\_k}$=8$) rồi vẫn so cặp --- nếu GraphRAG \emph{vẫn} thắng dù đọc ít chữ hơn thì ưu thế đến từ \emph{cấu trúc}, không phải khối lượng văn bản. Bảng~\ref{tab:control} tóm tắt các biến được giữ cố định.
+
+\begin{table}[!t]
+\caption{Variable control: only \emph{one} variable changes (the retrieval layer)}
+\label{tab:control}
+\centering
+\footnotesize
+\begin{tabular}{@{}p{0.46\columnwidth} p{0.40\columnwidth}@{}}
+\toprule
+\textbf{Variable} & \textbf{Held fixed} \\
+\midrule
+Generator (answer LLM) & Same model for all 3 pipelines \\
+Context size (tokens) & Parity (verified via \texttt{parity} mode) \\
+\texttt{temperature} & $=0$ (deterministic) \\
+Judge (model + protocol) & Single judge, different family from Generator \\
+Dataset + scoring prompt & Identical for all pipelines \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!t]
+\centering
+\begin{tikzpicture}[
+  node distance=3mm,
+  box/.style={draw, rounded corners, fill=blue!8, align=center,
+              font=\scriptsize, inner sep=3pt, text width=0.78\columnwidth},
+  gate/.style={draw, diamond, aspect=2.4, fill=orange!18, align=center,
+               font=\scriptsize, inner sep=1pt, text width=0.42\columnwidth},
+  data/.style={draw, fill=gray!12, align=center, font=\scriptsize,
+               inner sep=3pt, text width=0.55\columnwidth},
+  arr/.style={-{Stealth[length=2mm]}, semithick},
+]
+\node[gate] (gold) {Gold validation $\geq 80\%$?};
+\node[box, below=of gold] (par) {Parity check (no LLM call)};
+\node[box, below=of par] (gen) {\textbf{Generate}: 3 pipelines $\rightarrow$ answers + contexts};
+\node[data, below=of gen] (json) {JSON file + cache};
+\node[box, below=of json] (judge) {\textbf{Judge}: 5-criterion rubric $\times 3$ (majority)};
+\node[box, below=of judge] (out) {Leaderboard + pairwise + per-category};
+\foreach \x/\y in {gold/par,par/gen,gen/json,json/judge,judge/out}
+  \draw[arr] (\x) -- (\y);
+\end{tikzpicture}
+\caption{LLM-as-a-Judge benchmark workflow. The judge-reliability gate and the parity check come \emph{before} scoring; generation and judging are decoupled, with a cache for fault tolerance.}
+\label{fig:bench}
+\end{figure}
+
+\subsection{Bộ dữ liệu đánh giá}
+Tập đánh giá đa-bước gồm 15 câu hỏi, phân tầng theo \texttt{category} để báo cáo điểm tách theo từng loại --- bằng chứng thuyết phục nhất cho thấy GraphRAG mạnh ở đâu (Bảng~\ref{tab:dataset}). Mỗi câu kèm \texttt{ground\_truth}, \texttt{expected\_verdict} và \texttt{expected\_min\_accuracy}.
+
+\begin{table}[!t]
+\caption{Stratification of the multi-hop question set ($N=15$)}
+\label{tab:dataset}
+\centering
+\footnotesize
+\begin{tabular}{@{}p{0.42\columnwidth} c p{0.30\columnwidth}@{}}
+\toprule
+\textbf{Type} & \textbf{\# Q} & \textbf{Expectation} \\
+\midrule
+\texttt{aggregation} (listing) & 5 & GraphRAG superior \\
+\texttt{comparison} & 3 & GraphRAG superior \\
+\texttt{multi\_hop} (reasoning) & 5 & GraphRAG superior \\
+\texttt{single\_hop} (factoid) & 2 & Vector $\approx$ GraphRAG \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{PROMPT SỬ DỤNG}
+
+\subsection{Prompt sinh đáp án (GraphRAG)}
+Prompt tách rõ hai loại ngữ cảnh: \emph{đoạn văn tham khảo} là nguồn chính, còn \emph{gợi ý facts đồ thị} chỉ để nhắc kiểm tra ý bỏ sót --- nhằm tránh việc LLM sao chép nguyên văn các bộ ba và ràng buộc chống bịa đặt:
+\begin{quote}\footnotesize\itshape
+``Bạn là một trợ lý y tế chuyên nghiệp về COVID-19. Bạn được cung cấp hai loại ngữ cảnh: (1) ĐOẠN VĂN THAM KHẢO (nguồn chính); (2) GỢI Ý TỪ ĐỒ THỊ (chỉ tham khảo). Nguyên tắc: CHỈ dùng thông tin trong ngữ cảnh, TUYỆT ĐỐI không bịa; lấy đoạn văn làm nguồn chính, KHÔNG sao chép gợi ý đồ thị; nếu thiếu thông tin thì trả lời `Tài liệu hiện tại không có thông tin về vấn đề này.' [ĐOẠN VĂN] $\{$context\_str$\}$ [GỢI Ý ĐỒ THỊ] $\{$facts\_str$\}$ Câu hỏi: $\{$query\_str$\}$''
+\end{quote}
+
+\subsection{Prompt giám khảo (rubric)}
+Giám khảo nhận câu hỏi, ground truth, đáp án và ngữ cảnh; bắt buộc xuất JSON thuần để phân tích xác định (deterministic parsing):
+\begin{quote}\footnotesize\itshape
+``Bạn là giám khảo chuyên nghiệp đánh giá hệ thống RAG y khoa. Đánh giá theo 5 tiêu chí (0--5): Correctness, Completeness, Relevance, Faithfulness, Context Quality. Yêu cầu: trả về ĐÚNG JSON (không markdown); final\_decision = `Pass' nếu trung bình $\geq$ ngưỡng. $\{$\,correctness, completeness, relevance, faithfulness, context\_quality, final\_decision, explanation\,$\}$''
+\end{quote}
+
+\subsection{Prompt KG-RAG (Text-to-Cypher)}
+Pipeline KG dùng hai prompt: một sinh Cypher (ràng buộc dùng \texttt{MATCH (c:Chunk)}, ưu tiên \texttt{OR} để quét rộng, hỗ trợ song ngữ) và một tổng hợp đáp án chỉ từ kết quả truy vấn (``nếu cơ sở dữ liệu rỗng thì trả: Tôi không biết'').
+
+\section{KẾT QUẢ}
+\emph{Phần này sẽ được hoàn thiện sau khi chạy đủ benchmark cho cả ba pipeline.} Khung báo cáo và các bảng kết quả được chuẩn bị sẵn dưới đây để điền số liệu; trong đó hàng GraphRAG ở Bảng~\ref{tab:rubric} là số đo \emph{thực tế hiện có} trên $N=15$ câu đa-bước.
+
+\begin{table}[!t]
+\caption{Average rubric-score leaderboard (0--5), $N=15$}
+\label{tab:rubric}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l c c c c c c@{}}
+\toprule
+\textbf{Pipeline} & \textbf{Corr} & \textbf{Comp} & \textbf{Rel} & \textbf{Faith} & \textbf{Ctx} & \textbf{Avg} \\
+\midrule
+Vector RAG & -- & -- & -- & -- & -- & -- \\
+KG-RAG & -- & -- & -- & -- & -- & -- \\
+GraphRAG & 4.00 & 3.80 & 4.07 & 4.40 & 4.47 & \textbf{4.15} \\
+\bottomrule
+\end{tabular}
+\\[2pt]
+{\scriptsize GraphRAG: Pass $13/15$ ($86.7\%$). Cells ``--'' to be filled in later.}
+\end{table}
+
+\begin{table}[!t]
+\caption{Average score by question category}
+\label{tab:bycat}
+\centering
+\footnotesize
+\begin{tabular}{@{}l c c c@{}}
+\toprule
+\textbf{Category} & \textbf{Vector} & \textbf{KG-RAG} & \textbf{GraphRAG} \\
+\midrule
+\texttt{aggregation} & -- & -- & -- \\
+\texttt{comparison} & -- & -- & -- \\
+\texttt{multi\_hop} & -- & -- & -- \\
+\texttt{single\_hop} & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\\[2pt]
+{\scriptsize To be filled in later: shows GraphRAG's advantage concentrates on listing/multi-hop questions.}
+\end{table}
+
+Trên số liệu hiện có, GraphRAG đạt điểm trung bình $4{,}15/5$ với tỉ lệ Pass $86{,}7\%$, trong đó \emph{Faithfulness} ($4{,}40$) và \emph{Context Quality} ($4{,}47$) cao --- cho thấy lớp facts đồ thị bổ sung ngữ cảnh hữu ích mà không gây bịa đặt; \emph{Completeness} ($3{,}80$) là tiêu chí thấp nhất, đúng với kỳ vọng rằng câu liệt kê là khó nhất và là chỗ cần cải thiện. Theo thiết kế benchmark, kết luận về \emph{ưu thế của cấu trúc đồ thị} chỉ được khẳng định sau khi (i) xác nhận parity, (ii) GraphRAG vẫn thắng Vector RAG ở cấu hình robustness ($k=8$), và (iii) điểm tách tầng cho thấy chênh lệch tập trung ở \texttt{aggregation}/\texttt{multi\_hop}.
+
+\section{KẾT LUẬN}
+Báo cáo trình bày hướng tăng cường trợ lý hội thoại y tế bằng đồ thị tri thức, với đóng góp hiện thực trọng tâm là pipeline \textbf{GraphRAG lai hướng-thực-thể} kết hợp truy xuất vector làm điểm vào và duyệt quan hệ ngữ nghĩa trên Neo4j để bổ sung facts cùng bằng chứng. Song hành là một \textbf{khung đánh giá LLM-as-a-Judge kiểm soát biến}: rubric 5 tiêu chí, biểu quyết đa số, so sánh cặp mù chống thiên lệch, kiểm định giám khảo và giao thức parity --- cho phép quy mọi chênh lệch điểm về đúng lớp truy xuất. Kết quả sơ bộ cho thấy GraphRAG đạt độ trung thực và chất lượng ngữ cảnh cao; phần thực nghiệm đầy đủ cho cả ba pipeline trên tập dữ liệu lớn hơn sẽ được hoàn thiện trong các bảng đã chuẩn bị. Hạn chế hiện tại gồm: kích thước tập đánh giá còn nhỏ ($N=15$, cần $\geq 50$--$100$ câu để kết luận chắc chắn), KG-RAG nhạy với giới hạn tốc độ và chất lượng Cypher, và đồ thị trích tự động vẫn còn phân mảnh dù đã phân giải thực thể.
+
+\bibliographystyle{IEEEtran}
+\bibliography{bibliography}
+
+
+\end{document}

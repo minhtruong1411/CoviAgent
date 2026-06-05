@@ -1,0 +1,122 @@
+[
+  {
+    "id": "MH_01",
+    "question": "Hãy liệt kê đầy đủ tất cả các biện pháp phòng ngừa COVID-19 được khuyến nghị trong tài liệu.",
+    "ground_truth": "Các biện pháp phòng ngừa gồm: tiêm vắc-xin COVID-19 khi đến lượt; giữ khoảng cách ít nhất 1 mét với người khác; đeo khẩu trang vừa vặn khi không thể giãn cách hoặc ở nơi kém thông thoáng; chọn không gian mở, thông thoáng và mở cửa sổ khi ở trong nhà; rửa tay thường xuyên bằng xà phòng và nước hoặc dung dịch sát khuẩn chứa cồn; che miệng và mũi khi ho hoặc hắt hơi (vệ sinh hô hấp); và ở nhà tự cách ly cho đến khi hồi phục nếu cảm thấy không khoẻ.",
+    "category": "aggregation",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "MH_02",
+    "question": "Liệt kê tất cả các triệu chứng của COVID-19 theo ba nhóm: thường gặp, ít gặp và nghiêm trọng.",
+    "ground_truth": "Triệu chứng thường gặp: sốt, ho, mệt mỏi, mất vị giác hoặc khứu giác. Triệu chứng ít gặp: đau họng, đau đầu, đau nhức cơ thể, tiêu chảy, phát ban trên da hoặc đổi màu ngón tay/ngón chân, mắt đỏ hoặc bị kích ứng. Triệu chứng nghiêm trọng: khó thở hoặc hụt hơi, mất khả năng nói hoặc khả năng vận động hoặc lú lẫn, và đau ngực.",
+    "category": "aggregation",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 4
+  },
+  {
+    "id": "MH_03",
+    "question": "FDA đã cấp phép những thuốc kháng virus nào để điều trị COVID-19? Liệt kê đầy đủ tên các thuốc đó.",
+    "ground_truth": "Có ba thuốc kháng virus: Nirmatrelvir kết hợp với Ritonavir (Paxlovid), Veklury (remdesivir), và Molnupiravir (Lagevrio).",
+    "category": "aggregation",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 4
+  },
+  {
+    "id": "MH_04",
+    "question": "Liệt kê tất cả các nhóm người có nguy cơ cao bị bệnh nặng do COVID-19.",
+    "ground_truth": "Những người có nguy cơ cao bị bệnh nặng gồm: người cao tuổi (đặc biệt từ 75 tuổi trở lên, nguy cơ tăng theo tuổi); người chưa tiêm vắc-xin hoặc chưa cập nhật vắc-xin COVID-19; và người có một số bệnh nền như bệnh phổi mãn tính, bệnh tim, bệnh tim mạch, tiểu đường, bệnh hô hấp mãn tính, ung thư, hoặc hệ miễn dịch bị suy yếu.",
+    "category": "aggregation",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "MH_05",
+    "question": "Có mấy loại xét nghiệm virus chính để phát hiện COVID-19 và tên của chúng là gì?",
+    "ground_truth": "Có hai loại xét nghiệm virus chính: xét nghiệm khuếch đại axit nucleic (NAAT, bao gồm xét nghiệm PCR) và xét nghiệm kháng nguyên (antigen test).",
+    "category": "aggregation",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 4
+  },
+  {
+    "id": "MH_06",
+    "question": "So sánh ba loại thuốc kháng virus điều trị COVID-19 về đối tượng sử dụng, thời hạn bắt đầu điều trị và đường dùng.",
+    "ground_truth": "Paxlovid (Nirmatrelvir với Ritonavir): dùng cho người lớn và trẻ em từ 12 tuổi trở lên; phải bắt đầu trong vòng 5 ngày kể từ khi có triệu chứng; uống bằng đường miệng tại nhà. Veklury (remdesivir): dùng cho người lớn và trẻ em; phải bắt đầu trong vòng 7 ngày; truyền tĩnh mạch (IV) tại cơ sở y tế trong 3 ngày liên tiếp. Molnupiravir (Lagevrio): chỉ dùng cho người lớn; phải bắt đầu trong vòng 5 ngày; uống bằng đường miệng tại nhà.",
+    "category": "comparison",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "MH_07",
+    "question": "So sánh xét nghiệm NAAT/PCR và xét nghiệm kháng nguyên về độ nhạy, thời gian trả kết quả và nơi thực hiện.",
+    "ground_truth": "NAAT/PCR là 'tiêu chuẩn vàng', nhạy hơn (dễ phát hiện virus hơn xét nghiệm kháng nguyên); mẫu thường do nhân viên y tế lấy và gửi đến phòng xét nghiệm, có thể mất tới 3 ngày để có kết quả (một số NAAT làm tại chỗ cho kết quả nhanh hơn). Xét nghiệm kháng nguyên là xét nghiệm nhanh, thường cho kết quả trong 15-30 phút, nhưng ít nhạy hơn (đặc biệt khi không có triệu chứng) nên một lần âm tính không loại trừ được nhiễm; có thể tự làm tại nhà ở bất cứ đâu.",
+    "category": "comparison",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "MH_08",
+    "question": "Vai trò của vắc-xin COVID-19 và của thuốc kháng virus khác nhau như thế nào trong việc bảo vệ con người khỏi COVID-19?",
+    "ground_truth": "Vắc-xin COVID-19 là bước đầu tiên để phòng ngừa các hậu quả sức khoẻ nghiêm trọng, giúp bảo vệ khỏi bị bệnh nặng, nhập viện và tử vong. Thuốc kháng virus được dùng để điều trị sau khi đã nhiễm, nhắm vào các bộ phận của virus để ngăn nó nhân lên trong cơ thể, giúp phòng ngừa bệnh nặng và tử vong. Quan trọng: thuốc kháng virus KHÔNG phải là vật thay thế cho việc tiêm vắc-xin.",
+    "category": "comparison",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "MH_09",
+    "question": "Một người 78 tuổi, chưa tiêm vắc-xin và mắc bệnh tiểu đường vừa có kết quả xét nghiệm dương tính với COVID-19. Vì sao trường hợp này cần được quan tâm đặc biệt và nên làm gì tiếp theo?",
+    "ground_truth": "Người này có nhiều yếu tố nguy cơ bị bệnh nặng cùng lúc: tuổi cao (trên 75 tuổi), chưa tiêm vắc-xin, và có bệnh nền là tiểu đường, nên thuộc nhóm nguy cơ cao chuyển biến nặng. Vì vậy khi xét nghiệm dương tính, cần tìm chăm sóc y tế và điều trị ngay; việc điều trị phải được bắt đầu càng sớm càng tốt, trong vòng vài ngày (5-7 ngày) kể từ khi triệu chứng khởi phát. Không cần có xét nghiệm dương tính mới được bắt đầu điều trị nếu thuộc nhóm nguy cơ cao.",
+    "category": "multi_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "MH_10",
+    "question": "Một người KHÔNG có triệu chứng tự làm xét nghiệm nhanh kháng nguyên và cho kết quả âm tính. Họ đã có thể yên tâm là mình không nhiễm chưa, và cần làm gì để chắc chắn?",
+    "ground_truth": "Chưa thể yên tâm — một lần xét nghiệm kháng nguyên âm tính không thể loại trừ khả năng nhiễm, đặc biệt khi không có triệu chứng. FDA khuyến nghị người không có triệu chứng cần làm 3 lần xét nghiệm kháng nguyên âm tính (người có triệu chứng cần 2 lần), mỗi lần cách nhau 48 giờ. Ngoài ra có thể dùng một xét nghiệm NAAT để xác nhận kết quả.",
+    "category": "multi_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "MH_11",
+    "question": "Vì sao việc xét nghiệm COVID-19 lại đặc biệt quan trọng với người có yếu tố nguy cơ bệnh nặng, xét trên mối liên hệ giữa xét nghiệm và điều trị?",
+    "ground_truth": "Xét nghiệm giúp người bệnh quyết định bước tiếp theo, chẳng hạn như điều trị để giảm nguy cơ bệnh nặng và giảm khả năng lây cho người khác. Với người có nguy cơ cao, biết kết quả sớm là then chốt vì điều trị chỉ hiệu quả khi được bắt đầu trong vòng vài ngày (5-7 ngày) kể từ khi triệu chứng khởi phát; do đó xét nghiệm sớm cho phép bắt đầu điều trị kịp thời.",
+    "category": "multi_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "MH_12",
+    "question": "Trong những trường hợp nào một người mắc COVID-19 cần tìm chăm sóc y tế KHẨN CẤP, và họ nên lưu ý gì khi đến cơ sở y tế?",
+    "ground_truth": "Cần tìm chăm sóc y tế khẩn cấp ngay khi có các triệu chứng nghiêm trọng, gồm: khó thở hoặc hụt hơi; mất khả năng nói hoặc khả năng vận động, hoặc lú lẫn; và đau ngực. Khi cần đến gặp bác sĩ hoặc cơ sở y tế, luôn gọi điện trước khi đến.",
+    "category": "multi_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "MH_13",
+    "question": "Một người sống chung nhà với người đang mắc COVID-19. Dựa trên cách virus lây lan, người đó nên áp dụng những biện pháp nào để giảm nguy cơ bị lây?",
+    "ground_truth": "Virus lây từ miệng hoặc mũi của người nhiễm qua các hạt lỏng nhỏ khi họ ho, hắt hơi, nói, hát hoặc thở (từ giọt bắn lớn đến aerosol nhỏ). Để giảm nguy cơ lây, nên: giữ khoảng cách ít nhất 1 mét, đeo khẩu trang vừa vặn, chọn không gian thông thoáng và mở cửa sổ, rửa tay thường xuyên, che miệng mũi khi ho/hắt hơi; và người bệnh nên ở nhà tự cách ly cho đến khi hồi phục.",
+    "category": "multi_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "MH_14",
+    "question": "Thuốc Veklury (remdesivir) được dùng theo đường nào và trong bao lâu?",
+    "ground_truth": "Veklury (remdesivir) được dùng bằng đường truyền tĩnh mạch (IV) tại cơ sở y tế, trong 3 ngày liên tiếp.",
+    "category": "single_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 4
+  },
+  {
+    "id": "MH_15",
+    "question": "Xét nghiệm nhanh kháng nguyên thường cho kết quả trong bao lâu?",
+    "ground_truth": "Xét nghiệm kháng nguyên là xét nghiệm nhanh, thường cho kết quả trong vòng 15-30 phút.",
+    "category": "single_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 4
+  }
+]

@@ -79,6 +79,9 @@ def build_pipeline(config: AppConfig, p_type: str = "vector") -> BasePipeline:
         
         # Neo4j config (from YAML or env vars)
         neo4j_cfg = config.neo4j or Neo4jConfig()
+        # Tham số traversal GraphRAG: GHIM cố định qua config.graphrag để benchmark
+        # tái lập được và khớp với app.py (mặc định: 2-hop, 3 chunk, 25 facts).
+        g_cfg = config.graphrag
         return GraphRAGPipeline(
             retriever=retriever,
             llm=llm,
@@ -86,6 +89,13 @@ def build_pipeline(config: AppConfig, p_type: str = "vector") -> BasePipeline:
             neo4j_username=neo4j_cfg.username if config.neo4j else None,
             neo4j_password=neo4j_cfg.password if config.neo4j else None,
             neo4j_database=neo4j_cfg.database if config.neo4j else None,
+            expand_hops=g_cfg.expand_hops,
+            max_graph_chunks=g_cfg.max_graph_chunks,
+            max_facts=g_cfg.max_facts,
+            max_anchors=g_cfg.max_anchors,
+            final_chunks=g_cfg.final_chunks,
+            rerank=g_cfg.rerank,
+            use_entity_grounding=g_cfg.use_entity_grounding,
         )
     
     # Default is vector RAG
@@ -166,6 +176,74 @@ def load_gold_cases(gold_path: str) -> list[GoldCase]:
     return [GoldCase(**entry) for entry in data]
 
 
+def _pipeline_context_stats(pipeline, question):
+    """Đo kích thước ngữ cảnh THỰC SỰ được nạp vào LLM cho 1 câu hỏi (không gọi LLM).
+
+    Trả về dict {prose_chunks, facts, total_chars} hoặc None nếu pipeline không hỗ trợ.
+    """
+    # GraphRAG: dùng build_context (vector + đồ thị) — không tốn LLM.
+    if hasattr(pipeline, "build_context"):
+        ctx = pipeline.build_context(question)
+        prose = ctx["prose_texts"]
+        facts = ctx["facts"]
+        facts_chars = len(ctx["facts_str"]) if facts else 0
+        return {
+            "prose_chunks": len(prose),
+            "facts": len(facts),
+            "total_chars": facts_chars + sum(len(t) for t in prose),
+        }
+    # Vector RAG (và mọi pipeline có retriever): đo các chunk truy xuất.
+    if hasattr(pipeline, "retriever"):
+        texts = [c.text for c in pipeline.retriever.retrieve(question)]
+        return {
+            "prose_chunks": len(texts),
+            "facts": 0,
+            "total_chars": sum(len(t) for t in texts),
+        }
+    return None  # vd: KG pipeline (truy vấn Cypher, không có khái niệm chunk)
+
+
+def run_parity_check(pipelines, dataset):
+    """In bảng so sánh kích thước ngữ cảnh trung bình giữa các pipeline.
+
+    Mục đích: chứng minh các pipeline được benchmark trên lượng ngữ cảnh tương đương
+    (parity), để loại trừ phản biện 'thắng chỉ vì đọc nhiều chữ hơn'. KHÔNG gọi LLM.
+    """
+    print(f"\n{'='*78}")
+    print(f"📏 KIỂM TRA PARITY NGỮ CẢNH ({len(dataset)} câu hỏi, không gọi LLM)")
+    print(f"{'='*78}")
+
+    rows = []
+    for label, pipeline in pipelines.items():
+        n, sum_chunks, sum_facts, sum_chars, skipped = 0, 0, 0, 0, 0
+        for item in dataset:
+            stats = _pipeline_context_stats(pipeline, item.question)
+            if stats is None:
+                skipped += 1
+                continue
+            n += 1
+            sum_chunks += stats["prose_chunks"]
+            sum_facts += stats["facts"]
+            sum_chars += stats["total_chars"]
+        if n == 0:
+            rows.append((label, "N/A (không đo được, vd KG)", "", ""))
+            continue
+        rows.append((
+            label,
+            f"{sum_chunks / n:.1f}",
+            f"{sum_facts / n:.1f}",
+            f"{sum_chars / n:,.0f}",
+        ))
+
+    print(f"  {'Pipeline':<22} | {'Đoạn prose TB':>14} | {'Facts TB':>10} | {'Ký tự TB':>12}")
+    print(f"  {'-'*66}")
+    for label, chunks, facts, chars in rows:
+        print(f"  {label:<22} | {chunks:>14} | {facts:>10} | {chars:>12}")
+    print(f"{'='*78}")
+    print("  → Để công bằng (parity), 'Ký tự TB' giữa Vector và GraphRAG nên xấp xỉ nhau.")
+    print("    Nếu GraphRAG thắng dù 'Ký tự TB' THẤP HƠN → ưu thế đến từ cấu trúc đồ thị.\n")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="LLM-as-a-Judge Benchmark for CoviAgent",
@@ -181,8 +259,8 @@ def main():
         help="Type of pipeline A: vector (default), kg, or graphrag",
     )
     parser.add_argument(
-        "--mode", choices=["rubric", "pairwise", "round-robin", "compare-rubric", "gold-validate"], default="rubric",
-        help="Evaluation mode: rubric (default), pairwise, round-robin, compare-rubric, or gold-validate",
+        "--mode", choices=["rubric", "pairwise", "round-robin", "compare-rubric", "gold-validate", "parity"], default="rubric",
+        help="Evaluation mode: rubric (default), pairwise, round-robin, compare-rubric, gold-validate, or parity (so sánh kích thước ngữ cảnh, không gọi LLM)",
     )
     parser.add_argument(
         "--config-b",
@@ -441,6 +519,39 @@ def main():
             answers_file=args.answers_file,
         )
     
+    elif args.mode == "parity":
+        print(f"📏 Mode: Context Parity Check (no LLM)")
+
+        # Dựng các pipeline cần so sánh (A bắt buộc, B/C tuỳ chọn)
+        pipelines = {}
+        label_a = args.pipeline_type.upper()
+        print(f"🔧 Building Pipeline A: {label_a}")
+        pipelines[label_a] = build_pipeline(config, p_type=args.pipeline_type)
+
+        if args.config_b:
+            config_b = load_config(args.config_b)
+            label_b = args.pipeline_type_b.upper()
+            if label_b == label_a:
+                label_b = f"{label_b}_B"
+            print(f"🔧 Building Pipeline B: {label_b}")
+            pipelines[label_b] = build_pipeline(config_b, p_type=args.pipeline_type_b)
+
+        if args.config_c:
+            config_c = load_config(args.config_c)
+            label_c = args.pipeline_type_c.upper()
+            if label_c in pipelines:
+                label_c = f"{label_c}_C"
+            print(f"🔧 Building Pipeline C: {label_c}")
+            pipelines[label_c] = build_pipeline(config_c, p_type=args.pipeline_type_c)
+
+        dataset = load_questions(args.questions, args.max_questions)
+        print(f"📝 Loaded {len(dataset)} questions")
+        if not dataset:
+            print("❌ No questions with ground_truth found!")
+            sys.exit(1)
+
+        run_parity_check(pipelines, dataset)
+
     elif args.mode == "gold-validate":
         print(f"🥇 Mode: Gold Case Validation")
         

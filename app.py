@@ -16,7 +16,7 @@ from coviagent.pipeline.vector_rag import VectorRAGPipeline
 
 st.set_page_config(page_title="CoviAgent Chatbot", page_icon="🩺", layout="centered")
 
-@st.cache_resource
+# Removed @st.cache_resource to avoid PyTorch cross-thread meta tensor issues
 def init_pipeline(config_path, pipeline_type="vector"):
     load_dotenv()
     with open(config_path, "r", encoding="utf-8") as f:
@@ -39,10 +39,19 @@ def init_pipeline(config_path, pipeline_type="vector"):
     Settings.embed_model = embed_model
     Settings.llm = llm
     
+    retriever_config = config.retriever
+    
+    # --- FAIR BENCHMARK OVERRIDE ---
+    if pipeline_type == "vector":
+        retriever_config.top_k = 4
+    elif pipeline_type == "graphrag":
+        retriever_config.top_k = 8  # POOL ứng viên để rerank (không phải số đoạn cuối)
+    # -------------------------------
+        
     client = QdrantClient(url=config.qdrant_url)
     retriever = VectorRetriever.from_qdrant_client(
         client=client, 
-        config=config.retriever,
+        config=retriever_config,
         embed_model=embed_model,
         reranker_config=config.reranker
     )
@@ -58,6 +67,8 @@ def init_pipeline(config_path, pipeline_type="vector"):
             neo4j_username=neo4j_cfg.username if neo4j_cfg else None,
             neo4j_password=neo4j_cfg.password if neo4j_cfg else None,
             neo4j_database=neo4j_cfg.database if neo4j_cfg else None,
+            expand_hops=2,       # Lý luận đa bước trên đồ thị (2 hop)
+            max_graph_chunks=3,  # Giới hạn số chunk chứng cứ bổ sung
         )
 
     # 3. Vector RAG (Default)
@@ -141,28 +152,44 @@ if prompt := st.chat_input("Hỏi tôi bất cứ điều gì về COVID-19...")
         
         # Tách bạch rõ các nguồn tài liệu tham khảo
         if response.get('contexts'):
-            has_graph = 'graph_contexts' in response
-            has_vector = 'vector_contexts' in response
-            
-            if has_graph or has_vector:
-                # Hiển thị cho GraphRAG / KG
-                total = len(response['contexts'])
-                with st.expander(f"📚 Cấu trúc Tri thức Truy xuất ({total} nguồn)", expanded=True):
-                    
-                    if has_vector and response['vector_contexts']:
-                        st.markdown("#### 🎯 Nguồn từ Vector Search (Ngữ nghĩa)")
-                        for i, ctx in enumerate(response['vector_contexts']):
+            # GraphRAG trả về các key đặc thù: graph_facts / vector_contexts / ...
+            is_graphrag = 'graph_facts' in response or 'vector_contexts' in response
+
+            if is_graphrag:
+                vector_ctx = response.get('vector_contexts', [])
+                graph_facts = response.get('graph_facts', [])
+                evidence = response.get('graph_evidence_chunks', [])
+                anchors = response.get('anchor_entities', [])
+
+                with st.expander("🧠 Cấu trúc Tri thức Truy xuất (GraphRAG)", expanded=True):
+
+                    # 1) Thực thể neo (anchor) trích từ câu hỏi/ngữ cảnh
+                    if anchors:
+                        st.markdown("#### 📌 Thực thể neo (Anchor Entities)")
+                        st.markdown(" ".join(f"`{a}`" for a in anchors))
+
+                    # 2) Facts có cấu trúc từ đồ thị tri thức (phần lõi của GraphRAG)
+                    st.markdown("#### 🕸️ Tri thức từ Đồ thị (Quan hệ ngữ nghĩa)")
+                    if graph_facts:
+                        for f in graph_facts:
+                            st.success(f"➡️ {f}")
+                    else:
+                        st.warning("⚠️ Không tìm thấy quan hệ đồ thị liên quan cho truy vấn này "
+                                   "(hoặc Neo4j chưa khởi động đúng cách).")
+
+                    # 3) Đoạn văn nguồn từ Vector Search
+                    if vector_ctx:
+                        st.markdown("#### 🎯 Đoạn văn từ Vector Search (Ngữ nghĩa)")
+                        for i, ctx in enumerate(vector_ctx):
                             st.info(f"**Đoạn {i+1}:** {ctx}")
-                            
-                    if has_graph:
-                        st.markdown("#### 🕸️ Nguồn mở rộng từ Graph (Logic/Lân cận)")
-                        if response['graph_contexts']:
-                            for i, ctx in enumerate(response['graph_contexts']):
-                                st.success(f"**Mở rộng {i+1}:** {ctx}")
-                        else:
-                            st.warning("⚠️ Không tìm thấy liên kết đồ thị bổ sung nào cho truy vấn này (Hoặc Neo4j chưa được khởi động đúng cách).")
+
+                    # 4) Chunk chứng cứ bổ sung khám phá qua đồ thị
+                    if evidence:
+                        st.markdown("#### 🔗 Chunk chứng cứ bổ sung (qua Đồ thị)")
+                        for i, ctx in enumerate(evidence):
+                            st.markdown(f"**Mở rộng {i+1}:** {ctx}")
             else:
-                # Hiển thị mặc định cho Vector RAG thường
+                # Hiển thị mặc định cho Vector RAG / KG thường
                 with st.expander(f"📚 Nguồn tài liệu tham khảo ({len(response['contexts'])} đoạn)"):
                     for i, ctx in enumerate(response['contexts']):
                         st.markdown(f"**Đoạn {i+1}:**\n{ctx}")

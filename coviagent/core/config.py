@@ -43,6 +43,17 @@ class Neo4jConfig(BaseSettings):
     password: str = "password"
     database: str = "neo4j"
 
+class GraphRAGConfig(BaseSettings):
+    """Tham số traversal của GraphRAG. Ghim cố định để benchmark tái lập được
+    và khớp với cấu hình demo trên app.py."""
+    expand_hops: int = 2          # số bước traverse quan hệ ngữ nghĩa (1 hoặc 2)
+    max_graph_chunks: int = 6     # số chunk ứng viên tối đa lấy thêm từ đồ thị (vào pool)
+    max_facts: int = 25           # số triple (facts) tối đa đưa vào ngữ cảnh
+    max_anchors: int = 8          # số anchor entity tối đa
+    final_chunks: int = 5         # số đoạn prose giữ lại sau rerank (ngân sách parity)
+    rerank: bool = True           # bật rerank ứng viên theo embedding câu hỏi
+    use_entity_grounding: bool = True  # kéo chunk mô tả trực tiếp entity được hỏi
+
 class AppConfig(BaseSettings):
     llm: LLMConfig = LLMConfig()
     embedding: EmbeddingConfig = EmbeddingConfig()
@@ -50,6 +61,7 @@ class AppConfig(BaseSettings):
     reranker: RerankerConfig = RerankerConfig()
     judge: Optional[JudgeConfig] = None
     neo4j: Optional[Neo4jConfig] = None
+    graphrag: GraphRAGConfig = GraphRAGConfig()
     
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: Optional[str] = None

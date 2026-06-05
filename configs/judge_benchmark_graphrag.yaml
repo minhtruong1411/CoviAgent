@@ -15,16 +15,32 @@ embedding:
   dimension: 384
 
 retriever:
-  top_k: 5
+  top_k: 8   # POOL ứng viên: lấy rộng 8 đoạn vector rồi rerank lại còn final_chunks
   collection_name: "medical_dialogue_v1"
+
+# Tham số GraphRAG nâng cao — GHIM cố định để benchmark tái lập & khớp app.py
+# Hybrid: pool(vector 8 + chunk đồ thị) -> rerank -> giữ 5 đoạn prose (parity với Vector top_k=5)
+graphrag:
+  expand_hops: 2
+  max_graph_chunks: 6        # số chunk đồ thị (entity-grounded + lân cận) đưa vào pool
+  max_facts: 25
+  max_anchors: 8
+  final_chunks: 5            # giữ 5 đoạn prose sau rerank → cân với Vector top_k=5
+  rerank: true
+  use_entity_grounding: true
 
 qdrant_url: "http://localhost:6333"
 
-# Judge configuration
+# Judge configuration — PHẢI GIỐNG HỆT ở cả 3 config (vector/kg/graphrag) để
+# cùng một giám khảo chấm công bằng cho mọi pipeline.
 judge:
   provider: "groq"
-  model_name: "llama-3.3-70b-versatile"
+  # GIÁM KHẢO dùng model KHÁC generator (generator = Llama-3.3-70B) để tránh
+  # self-preference bias. Xác nhận ID khả dụng trên tài khoản Groq của bạn; có thể
+  # thay bằng: moonshotai/kimi-k2-instruct | deepseek-r1-distill-llama-70b ...
+  model_name: "openai/gpt-oss-120b"
   temperature: 0.0
+  api_key_env_var: "GROQ_API_KEY"
   num_runs: 3              # Majority vote: 3 lần chấm
-  api_delay_seconds: 10.0   # Tăng delay lên 10s để tránh rate limit của Groq
+  api_delay_seconds: 10.0  # Delay tránh rate limit Groq
   pass_threshold: 3.0      # Trung bình >= 3.0 → Pass

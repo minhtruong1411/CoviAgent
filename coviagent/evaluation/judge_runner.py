@@ -673,11 +673,20 @@ class JudgeBenchmarkRunner:
                 for item in tqdm(dataset, desc=f"Generating {label}"):
                     try:
                         resp = pipeline.query(item.question)
+                        # pipeline.query() trả về dict {"answer":..., "contexts":[...]}
+                        # (đúng cho cả VectorRAG, GraphRAG, KG). Lấy đúng 2 trường này;
+                        # KHÔNG str(resp) (sẽ lưu cả dict) và KHÔNG đọc .source_nodes (không tồn tại).
+                        if isinstance(resp, dict):
+                            bot_answer = resp.get("answer", "")
+                            contexts = resp.get("contexts", []) or []
+                        else:
+                            bot_answer = str(resp)
+                            contexts = []
                         all_generated[label].append({
                             "question": item.question,
                             "ground_truth": item.ground_truth,
-                            "bot_answer": str(resp),
-                            "contexts": [c.text for c in resp.source_nodes] if hasattr(resp, 'source_nodes') else []
+                            "bot_answer": bot_answer,
+                            "contexts": contexts,
                         })
                     except Exception as e:
                         all_generated[label].append({

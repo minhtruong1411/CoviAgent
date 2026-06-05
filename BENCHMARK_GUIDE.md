@@ -36,6 +36,8 @@ python scripts/run_all_judges.py --phase judge
 ```
 *(Nếu bạn gõ `python scripts/run_all_judges.py` không kèm tham số, nó sẽ mặc định chạy phase `judge`).*
 
+> **Lưu ý (parity):** `run_all_judges.py` tự động chọn **config riêng cho từng pipeline** (`vector → judge_benchmark.yaml`, `graphrag → judge_benchmark_graphrag.yaml`, `kg → judge_benchmark_kg.yaml`) để các pipeline được benchmark trên lượng ngữ cảnh tương đương. Chi tiết cơ chế cân bằng xem **Mục 7**.
+
 ---
 
 ## 3. Khôi phục sau lỗi (Fault Tolerance)
@@ -111,3 +113,117 @@ python scripts/run_all_judges.py --phase judge --questions data/gold_cases_p1.js
 2. Mọi người gửi file Cache này cho Nhóm trưởng.
 3. Nhóm trưởng sẽ dùng một Script Gộp Điểm (Merge Script) để nối 4 file Cache lại thành 1 Bảng Xếp Hạng cuối cùng hoàn chỉnh cho cả 80 câu.
 *(Bằng cách này, nhóm bạn có thể Scale lên hàng nghìn câu hỏi mà không tốn một xu phí API nào!)*
+
+---
+
+## 7. Benchmark Cân Bằng (Fair Comparison): Vector RAG vs GraphRAG
+
+### 7.1 Vì sao cần "cân bằng"?
+GraphRAG nạp vào LLM **nhiều hơn** Vector RAG: ngoài các chunk vector, nó còn thêm **chunk chứng cứ từ đồ thị** và một khối **facts có cấu trúc** (các bộ ba `chủ thể -[quan hệ]-> đối tượng`). Nếu để Vector RAG `top_k` quá thấp, GraphRAG thắng hiển nhiên vì *đọc được nhiều thông tin hơn* — kết quả này **không chứng minh được** phương pháp đồ thị tốt hơn.
+
+Vì vậy ta cân **lượng ngữ cảnh prose (đoạn văn) ngang nhau**, rồi để **lớp facts đồ thị** là điểm khác biệt duy nhất — chính là thứ ta muốn đo.
+
+### 7.2 Cấu hình đã ghim sẵn
+
+| Pipeline | Config | vector `top_k` | Tham số đồ thị | ≈ đoạn prose |
+|---|---|---|---|---|
+| **Vector RAG** (① số liệu chính) | `judge_benchmark.yaml` | **5** | — | ~5 |
+| **GraphRAG** | `judge_benchmark_graphrag.yaml` | **2** | `expand_hops=2`, `max_graph_chunks=3`, `max_facts=25` | ~5 (2 vector + 3 evidence) + 25 facts |
+| **Vector RAG** (② robustness) | `judge_benchmark_method_b.yaml` | **8** | — | ~8 |
+
+Tham số đồ thị được khai báo ở mục `graphrag:` trong file config và **ghim cố định** (không đổi giữa các lần chạy) để kết quả tái lập được và khớp với demo trên `app.py`.
+
+### 7.3 Bước 1 — Kiểm tra parity (KHÔNG tốn LLM)
+Trước khi chấm điểm, hãy xác minh các pipeline thực sự thấy lượng ngữ cảnh tương đương. Mode `parity` chỉ chạy phần truy xuất (vector + đồ thị) và in bảng so sánh, **không gọi LLM nên miễn phí**:
+
+```powershell
+python scripts/run_judge_benchmark.py --mode parity `
+  --config configs/judge_benchmark.yaml --pipeline-type vector `
+  --config-b configs/judge_benchmark_graphrag.yaml --pipeline-type-b graphrag `
+  --config-c configs/judge_benchmark_method_b.yaml --pipeline-type-c vector
+```
+
+Kết quả mẫu (8 câu hỏi):
+```
+  Pipeline               |  Đoạn prose TB |   Facts TB |     Ký tự TB
+  ------------------------------------------------------------------
+  VECTOR                 |            5.0 |        0.0 |        7,751
+  GRAPHRAG               |            5.0 |       25.0 |        7,173
+  VECTOR_C               |            8.0 |        0.0 |       12,253
+```
+→ Vector (7,751) và GraphRAG (7,173) gần bằng nhau về số ký tự ⇒ **parity đạt**. Nếu sau này đổi tham số, chạy lại lệnh này để chắc chắn ngữ cảnh vẫn cân.
+
+### 7.4 Bước 2 — ① Số liệu chính (round-robin, 1 giám khảo chung)
+Mode `round-robin` dùng **một giám khảo duy nhất** (lấy từ config đầu tiên) để chấm cả 3 pipeline ⇒ chấm hoàn toàn công bằng. Pipeline được dựng từ config riêng nên giữ đúng parity:
+
+```powershell
+python scripts/run_judge_benchmark.py --mode round-robin `
+  --config configs/judge_benchmark.yaml --pipeline-type vector `
+  --config-b configs/judge_benchmark_kg.yaml --pipeline-type-b kg `
+  --config-c configs/judge_benchmark_graphrag.yaml --pipeline-type-c graphrag
+```
+
+### 7.5 Bước 3 — ② Kiểm chứng robustness (chống phản biện "đọc nhiều chữ hơn")
+Cho Vector RAG **dư** ngữ cảnh (`top_k=8`) rồi so tay đôi với GraphRAG. Nếu GraphRAG **vẫn thắng** dù đọc ít chữ hơn → ưu thế đến từ **cấu trúc đồ thị**, không phải khối lượng văn bản. Đây là luận điểm mạnh nhất:
+
+```powershell
+python scripts/run_judge_benchmark.py --mode pairwise `
+  --config configs/judge_benchmark_method_b.yaml --pipeline-type vector `
+  --config-b configs/judge_benchmark_graphrag.yaml --pipeline-type-b graphrag
+```
+
+### 7.6 Cách đọc kết quả & lưu ý
+- **`completeness` (đầy đủ)** thường là nơi GraphRAG vượt trội nhất, do facts đồ thị gom đủ các mục liên quan (vd: liệt kê đủ triệu chứng/yếu tố nguy cơ).
+- **`faithfulness` (trung thực)**: theo dõi để chắc lớp facts không gây "ảo giác" — nếu điểm này tụt khi tăng `max_facts`, hãy giảm `max_facts` xuống.
+- **Cùng mô hình sinh**: cả 3 pipeline (Vector, GraphRAG, **KG**) đều dùng cùng LLM sinh **Groq Llama-3.3-70B**, nên chênh lệch điểm là do *retrieval*, không do *generator*. (Lưu ý kỹ thuật: `KGRAGPipeline` luôn dùng `ChatGroq` và **bỏ qua `provider`** trong YAML — chỉ đọc `model_name` — nên `model_name` trong `judge_benchmark_kg.yaml` **bắt buộc** phải là model hợp lệ trên Groq.)
+- **Một giám khảo chung & KHÁC model với generator**: block `judge:` để **giống hệt nhau** ở cả 4 config (cùng model, `num_runs=3` majority-vote, cùng `temperature`/`delay`/`threshold`). Giám khảo dùng **model khác generator** (generator = Llama-3.3-70B → giám khảo = `openai/gpt-oss-120b` trên Groq) để tránh *self-preference bias* (LLM chấm cao cho văn phong của chính nó). Ở mode `round-robin`/`pairwise`, giám khảo còn được build **một lần duy nhất** từ config đầu tiên → đảm bảo tuyệt đối.
+- Muốn đổi mức cân bằng, chỉ cần sửa `retriever.top_k` trong các config và mục `graphrag:` của `judge_benchmark_graphrag.yaml`, rồi chạy lại **Bước 1** để xác nhận parity.
+
+---
+
+## 8. Quy chuẩn Benchmark Học thuật (để kết quả đáng tin & bảo vệ được)
+
+Một benchmark "đúng chuẩn" phải kiểm soát biến và minh bạch. Checklist áp dụng cho dự án này:
+
+### 8.1 Nguyên tắc kiểm soát biến — chỉ khác **một biến** (retrieval)
+| Biến | Phải giữ cố định | Trạng thái |
+|---|---|---|
+| LLM sinh đáp án (generator) | cùng model cho 3 pipeline | ✅ Groq Llama-3.3-70B |
+| Lượng ngữ cảnh (token) | parity giữa các pipeline | ✅ xem Mục 7 |
+| `temperature` | = 0 (xác định) | ✅ |
+| Giám khảo (model + giao thức) | một giám khảo, **khác model generator** | ✅ `openai/gpt-oss-120b`, `num_runs=3` |
+| Dataset + prompt chấm | giống nhau | ✅ |
+
+### 8.2 Tránh self-preference bias
+**Giám khảo KHÔNG được trùng model với generator.** Ở đây generator là Llama-3.3-70B nên giám khảo dùng `openai/gpt-oss-120b` (khác họ, mạnh hơn). Đây là lỗi học thuật phổ biến nhất của LLM-as-Judge — đã được xử lý.
+
+### 8.3 Kiểm định độ tin cậy của giám khảo (làm TRƯỚC khi tin điểm)
+Cho giám khảo chấm các đáp án đã biết đúng/sai; nếu đồng thuận ≥ 80% mới đáng tin:
+```powershell
+python scripts/run_judge_benchmark.py --mode gold-validate `
+  --config configs/judge_benchmark.yaml --gold-cases data/gold_cases.json
+```
+
+### 8.4 Dataset đủ lớn & phân tầng
+- **Số lượng:** ≥ 50–100 câu (N=10 chỉ để thử nghiệm, không đủ kết luận).
+- **Phân tầng theo `category`** trong `gold_cases.json`:
+  - *one-hop / factoid* → kỳ vọng Vector ≈ GraphRAG.
+  - *aggregation / multi-hop* (liệt kê, tổng hợp) → kỳ vọng GraphRAG vượt trội.
+- **Báo cáo điểm TÁCH theo từng tầng** — đây là bằng chứng thuyết phục nhất cho thấy GraphRAG mạnh ở đâu.
+
+### 8.5 Chấm bằng 2 chế độ bổ trợ
+- **Rubric 0–5** (`compare-rubric`): điểm tuyệt đối theo 5 tiêu chí → *chẩn đoán mạnh/yếu ở đâu*.
+- **Pairwise mù** (`round-robin`): win-rate tương đối, không lệ thuộc cách neo thang điểm → *ai thắng*.
+
+### 8.6 Quy trình chuẩn (tóm tắt)
+```
+1. gold-validate  → giám khảo đạt ≥ 80% mới chạy tiếp
+2. generate (1 lần, lưu answer + contexts)   →  run_all_judges.py --phase generate
+3. judge:
+   - rubric:    run_all_judges.py --phase judge
+   - pairwise:  run_judge_benchmark.py --mode round-robin --phase judge
+4. Báo cáo: trung bình từng tiêu chí + TÁCH theo category + win-rate;
+            ghi rõ N, model generator, model giám khảo, cấu hình parity.
+```
+
+> **Lưu ý reproducibility:** mỗi lần đổi tham số (top_k, max_facts, model giám khảo...) đều phải chạy lại **`--mode parity`** (Mục 7.3) và **`gold-validate`** (8.3) rồi mới generate/judge, và ghi lại cấu hình kèm kết quả.

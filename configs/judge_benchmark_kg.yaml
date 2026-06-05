@@ -3,9 +3,12 @@
 # ──────────────────────────────────────────────────────────
 
 # Pipeline under evaluation
+# LƯU Ý: KGRAGPipeline LUÔN dùng ChatGroq và bỏ qua `provider`; nó chỉ đọc `model_name`.
+# Vì vậy phải để model_name là một model HỢP LỆ TRÊN GROQ, và để cùng model sinh với
+# Vector/GraphRAG (Groq Llama-3.3-70B) thì so sánh mới công bằng (chỉ khác ở retrieval).
 llm:
-  provider: "openrouter"
-  model_name: "meta-llama/llama-3-8b-instruct:free"
+  provider: "groq"
+  model_name: "llama-3.3-70b-versatile"
   temperature: 0.0
 
 embedding:
@@ -19,11 +22,16 @@ retriever:
 
 qdrant_url: "http://localhost:6333"
 
-# Judge configuration
+# Judge configuration — PHẢI GIỐNG HỆT ở cả 3 config (vector/kg/graphrag) để
+# cùng một giám khảo chấm công bằng cho mọi pipeline.
 judge:
   provider: "groq"
-  model_name: "llama-3.3-70b-versatile"
+  # GIÁM KHẢO dùng model KHÁC generator (generator = Llama-3.3-70B) để tránh
+  # self-preference bias. Xác nhận ID khả dụng trên tài khoản Groq của bạn; có thể
+  # thay bằng: moonshotai/kimi-k2-instruct | deepseek-r1-distill-llama-70b ...
+  model_name: "openai/gpt-oss-120b"
   temperature: 0.0
+  api_key_env_var: "GROQ_API_KEY"
   num_runs: 3              # Majority vote: 3 lần chấm
-  api_delay_seconds: 10.0   # Tăng delay lên 10s để tránh rate limit của Groq
+  api_delay_seconds: 10.0  # Delay tránh rate limit Groq
   pass_threshold: 3.0      # Trung bình >= 3.0 → Pass

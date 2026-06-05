@@ -11,6 +11,17 @@ def main():
     parser.add_argument("--answers-file", default="experiments/answers_all.json", help="Đường dẫn lưu/đọc file kết quả (answers)")
     args = parser.parse_args()
 
+    # Mỗi pipeline dùng ĐÚNG config của nó để đảm bảo benchmark CÂN BẰNG (parity):
+    #   vector  → top_k=5            (≈ 5 đoạn prose)
+    #   graphrag→ top_k=2 + đồ thị   (2 vector + 3 evidence ≈ 5 đoạn prose + 25 facts)
+    #   kg      → top_k=5
+    # Xem mục "Benchmark Cân Bằng" trong BENCHMARK_GUIDE.md.
+    config_by_pipeline = {
+        "vector": "configs/judge_benchmark.yaml",
+        "kg": "configs/judge_benchmark_kg.yaml",
+        "graphrag": "configs/judge_benchmark_graphrag.yaml",
+    }
+
     # 3 khóa API Groq từ file .env của bạn để luân phiên sử dụng
     keys = [
         "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",  # Key 1
@@ -28,12 +39,13 @@ def main():
         env["GROQ_API_KEY"] = keys[i % len(keys)]
         env["PYTHONIOENCODING"] = "utf-8"
         
-        # Câu lệnh CLI
+        # Câu lệnh CLI — chọn config theo từng pipeline để giữ parity
+        cfg = config_by_pipeline.get(pipeline, "configs/judge_benchmark.yaml")
         cmd = [
             sys.executable,
             "scripts/run_judge_benchmark.py",
             "--mode", "compare-rubric",
-            "--config", "configs/judge_benchmark.yaml",
+            "--config", cfg,
             "--pipeline-type", pipeline,
             "--phase", args.phase,
             "--questions", args.questions,

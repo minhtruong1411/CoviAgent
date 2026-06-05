@@ -22,13 +22,23 @@ def main():
         "graphrag": "configs/judge_benchmark_graphrag.yaml",
     }
 
-    # 3 khóa API Groq từ file .env của bạn để luân phiên sử dụng
-    keys = [
-        "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",  # Key 1
-        "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",  # Key 2
-        "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"   # Key 3
-    ]
-    
+    # Đọc các khoá API Groq TỪ FILE .env để luân phiên (KHÔNG hardcode nữa).
+    # Lấy mọi biến GROQ_API_KEY / GROQ_API_KEY_1..3 đang đặt, khử trùng, giữ thứ tự.
+    from dotenv import load_dotenv
+    load_dotenv()
+    key_names = ["GROQ_API_KEY", "GROQ_API_KEY_1", "GROQ_API_KEY_2", "GROQ_API_KEY_3"]
+    keys, seen = [], set()
+    for name in key_names:
+        v = (os.environ.get(name) or "").strip()
+        if v and v not in seen and not v.startswith("gsk_key"):  # bỏ placeholder
+            seen.add(v)
+            keys.append(v)
+    if not keys:
+        print("❌ Không tìm thấy khoá Groq nào trong .env "
+              "(cần GROQ_API_KEY hoặc GROQ_API_KEY_1/2/3). Hãy thêm vào .env rồi chạy lại.")
+        sys.exit(1)
+    print(f"🔑 Dùng {len(keys)} khoá Groq từ .env để luân phiên.")
+
     for i, pipeline in enumerate(args.pipelines):
         print(f"\n{'='*50}")
         print(f"🚀 Running {args.phase.upper()} for {pipeline.upper()} with Key {i+1}")

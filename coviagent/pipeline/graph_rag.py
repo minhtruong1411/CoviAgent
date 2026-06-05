@@ -68,23 +68,26 @@ INTENT_KEYWORDS = [
 DEFAULT_GRAPHRAG_PROMPT = (
     "Bạn là một trợ lý y tế chuyên nghiệp về COVID-19.\n\n"
     "Bạn được cung cấp hai loại ngữ cảnh:\n"
-    "1. TRI THỨC TỪ ĐỒ THỊ: các mối quan hệ có cấu trúc (chủ thể → quan hệ → đối tượng) "
-    "được trích từ đồ thị tri thức. Hãy dùng chúng để liệt kê đầy đủ và chính xác.\n"
-    "2. ĐOẠN VĂN THAM KHẢO: văn bản gốc, dùng để bổ sung chi tiết và diễn giải.\n\n"
+    "1. ĐOẠN VĂN THAM KHẢO (NGUỒN CHÍNH): văn bản gốc — hãy DỰA VÀO ĐÂY để trả lời, "
+    "diễn giải tự nhiên, giữ đúng cấu trúc/phân loại/sắc thái của tài liệu.\n"
+    "2. GỢI Ý TỪ ĐỒ THỊ (chỉ để tham khảo): danh sách quan hệ rút gọn, có thể trùng lặp "
+    "hoặc thiếu ngữ cảnh. Chỉ dùng để NHẮC bạn kiểm tra xem có bỏ sót ý nào không.\n\n"
     "NGUYÊN TẮC:\n"
     "- CHỈ dùng thông tin trong ngữ cảnh bên dưới, TUYỆT ĐỐI không bịa.\n"
-    "- Ưu tiên các facts trong TRI THỨC TỪ ĐỒ THỊ khi câu hỏi yêu cầu liệt kê "
-    "(triệu chứng, nguyên nhân, cách điều trị, yếu tố nguy cơ...).\n"
+    "- Lấy ĐOẠN VĂN THAM KHẢO làm nguồn chính. TUYỆT ĐỐI KHÔNG sao chép nguyên văn các "
+    "dòng trong GỢI Ý TỪ ĐỒ THỊ; không nhắc tới 'đồ thị' trong câu trả lời.\n"
+    "- Nếu gợi ý đồ thị bị trùng (vd nhiều biến thể của cùng một khái niệm), hãy gộp lại "
+    "thành một mục duy nhất, diễn đạt tự nhiên.\n"
     "- Nếu ngữ cảnh không chứa thông tin liên quan, hãy nói: "
     "'Tài liệu hiện tại không có thông tin về vấn đề này.'\n"
-    "- Trả lời bằng tiếng Việt, rõ ràng, có cấu trúc.\n\n"
-    "===== TRI THỨC TỪ ĐỒ THỊ =====\n"
-    "{facts_str}\n\n"
-    "===== ĐOẠN VĂN THAM KHẢO =====\n"
+    "- Trả lời bằng tiếng Việt, rõ ràng, có cấu trúc, đầy đủ.\n\n"
+    "===== ĐOẠN VĂN THAM KHẢO (nguồn chính) =====\n"
     "{context_str}\n"
+    "===== GỢI Ý TỪ ĐỒ THỊ (chỉ tham khảo, có thể trùng) =====\n"
+    "{facts_str}\n"
     "==============================\n\n"
     "Câu hỏi: {query_str}\n"
-    "Trả lời (chỉ dựa trên ngữ cảnh ở trên): "
+    "Trả lời (diễn giải tự nhiên từ ĐOẠN VĂN, không sao chép gợi ý đồ thị): "
 )
 
 _WORD_RE = re.compile(r"[a-zA-Zà-ỹÀ-Ỹ0-9\-]+", re.UNICODE)
@@ -421,17 +424,36 @@ class GraphRAGPipeline(BasePipeline):
             logger.warning("GraphRAG rerank failed (%s); fallback cắt theo thứ tự.", e)
             return texts[:top_n]
 
-    @staticmethod
-    def _format_facts(facts: List[Dict[str, Any]]) -> str:
+    # từ chung chung bị loại khi tính "khái niệm" của một entity (để gộp biến thể trùng)
+    _GENERIC_ENT_TOKENS = {"covid-19", "covid", "19", "sars-cov-2", "các", "the", "of", "and"}
+
+    @classmethod
+    def _concept_key(cls, name: str) -> frozenset:
+        """Khoá khái niệm của một entity: tập tiền tố 4 ký tự của các token có nghĩa.
+        Giúp gộp 'Vaccination' / 'Covid-19 Vaccine' / 'Covid-19 Vaccines' về cùng một."""
+        toks = [w for w in _WORD_RE.findall(name.lower())
+                if w not in cls._GENERIC_ENT_TOKENS and len(w) > 2]
+        return frozenset(w[:4] for w in toks) or frozenset([name.lower()])
+
+    @classmethod
+    def _format_facts(cls, facts: List[Dict[str, Any]], max_lines: int = 15) -> str:
         if not facts:
-            return "(Không tìm thấy quan hệ liên quan trong đồ thị.)"
+            return "(Không có gợi ý liên quan.)"
+        seen = set()
         lines = []
         for f in facts:
+            # khử trùng theo (quan hệ, khái niệm chủ thể, khái niệm đối tượng)
+            key = (f["rel"], cls._concept_key(f["subj"]), cls._concept_key(f["obj"]))
+            if key in seen:
+                continue
+            seen.add(key)
             verb = RELATION_VERB_VI.get(f["rel"], f["rel"].lower())
             line = f"- {f['subj']} {verb} {f['obj']}"
             if f.get("desc"):
                 line += f" ({f['desc']})"
             lines.append(line)
+            if len(lines) >= max_lines:
+                break
         return "\n".join(lines)
 
     # ──────────────────────────────────────────────

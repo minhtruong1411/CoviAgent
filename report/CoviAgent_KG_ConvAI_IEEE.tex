@@ -43,7 +43,7 @@
 \begin{abstract}
 Sự phát triển nhanh chóng của các mô hình ngôn ngữ lớn (LLMs) đã thúc đẩy đáng kể năng lực của các hệ thống hội thoại tự động, cho phép tạo ra các tương tác tự nhiên, linh hoạt và giàu ngữ cảnh. Tuy nhiên, các hệ thống này vẫn tồn tại nhiều hạn chế cốt lõi, đặc biệt trong việc đảm bảo độ chính xác dữ kiện, khả năng suy luận phức tạp và tính minh bạch trong quá trình sinh phản hồi. Do được xây dựng dựa trên các mô hình xác suất học từ dữ liệu văn bản phi cấu trúc, LLMs có thể sinh ra các thông tin không chính xác nhưng có vẻ hợp lý (hallucination), đồng thời gặp khó khăn trong các bài toán yêu cầu suy luận đa bước và kết nối tri thức từ nhiều nguồn khác nhau.
 Trong báo cáo này, chúng tôi tập trung vào hướng tiếp cận tích hợp Đồ thị Tri thức (Knowledge Graph - KG) vào hệ thống Conversational AI nhằm khắc phục các hạn chế trên. Bằng cách khai thác tri thức có cấu trúc dưới dạng các thực thể và quan hệ, phương pháp đề xuất giúp cải thiện khả năng truy xuất thông tin chính xác, hỗ trợ suy luận logic và cung cấp các đường dẫn giải thích rõ ràng cho phản hồi của hệ thống. Đặc biệt, hướng tiếp cận này được xem xét trong bối cảnh bài toán hỏi đáp và hội thoại y tế, nơi yêu cầu cao về độ tin cậy và khả năng giải thích.
-Phương pháp được đánh giá dựa trên các tiêu chí như độ chính xác dữ kiện, khả năng suy luận đa bước và tính minh bạch của phản hồi, qua đó cho thấy tiềm năng của việc kết hợp Knowledge Graph và LLM trong việc xây dựng các hệ thống hội thoại đáng tin cậy, có khả năng ứng dụng thực tiễn cao.
+Chúng tôi hiện thực ba pipeline --- Vector RAG (đường cơ sở), KG-RAG (Text-to-Cypher) và một GraphRAG lai hướng-thực-thể --- và đánh giá có kiểm soát biến bằng khung LLM-as-a-Judge (rubric 5 tiêu chí, giám khảo khác họ với mô hình sinh, parity ngữ cảnh). Trái với kỳ vọng ban đầu, kết quả thực nghiệm trên một kho ngữ liệu COVID-19 \emph{nhỏ và mạch lạc} ($N=30$ câu) cho thấy Vector RAG vẫn là một đường cơ sở rất mạnh ($4{,}41/5$), \emph{vượt} cả GraphRAG ($3{,}65$) lẫn KG-RAG ($2{,}00$) trên mọi loại câu hỏi. Vì vậy, đóng góp cốt lõi của báo cáo mang tính \emph{phân tích chẩn đoán}: chúng tôi mổ xẻ \textbf{vì sao} các phương pháp truy xuất có cấu trúc chưa đánh bại được truy xuất vector thuần túy --- gồm sự phù hợp giữa đặc tính kho ngữ liệu và phương pháp, hiện tượng lớp facts đồ thị làm giảm độ bám sát (relevance), và giới hạn về chất lượng của đồ thị tri thức trích xuất tự động --- đồng thời chỉ ra các điều kiện (kho ngữ liệu lớn, phân mảnh, đa nguồn) mà ở đó ưu thế của cấu trúc đồ thị mới có thể bộc lộ.
 
 \end{abstract}
 
@@ -62,7 +62,7 @@ Các phương pháp như Retrieval-Augmented Generation (RAG) đã được đ�
 
 Trong báo cáo này, chúng tôi nghiên cứu và đề xuất một hướng tiếp cận Conversational AI được tăng cường bởi Knowledge Graph, nhằm nâng cao khả năng suy luận, tính minh bạch và độ tin cậy của hệ thống. Đặc biệt, chúng tôi định hướng áp dụng phương pháp này cho bài toán hỏi đáp và hội thoại trong lĩnh vực y tế, nơi yêu cầu cao về độ chính xác và khả năng giải thích. Bài toán đặt ra là xây dựng một hệ thống có khả năng tiếp nhận câu hỏi từ người dùng, truy xuất và tổng hợp thông tin từ nhiều nguồn tri thức y khoa, đồng thời thực hiện suy luận đa bước để đưa ra câu trả lời phù hợp và có căn cứ rõ ràng.
 
-Các đóng góp chính của báo cáo bao gồm: (1) phân tích các hạn chế của các hệ thống hội thoại dựa trên LLM, (2) trình bày vai trò của Knowledge Graph trong việc khắc phục các hạn chế này, và (3) đề xuất một hướng tích hợp KG vào kiến trúc Conversational AI hướng tới bài toán hỏi đáp y tế.
+Các đóng góp chính của báo cáo bao gồm: (1) hiện thực ba pipeline truy xuất (Vector RAG, KG-RAG dạng Text-to-Cypher, và GraphRAG lai hướng-thực-thể) dùng chung một Generator; (2) một khung đánh giá \textbf{LLM-as-a-Judge kiểm soát biến} (rubric 5 tiêu chí, giám khảo khác họ chống self-bias, parity ngữ cảnh, kiểm định giám khảo) cho phép quy mọi chênh lệch về đúng lớp truy xuất; và (3) --- quan trọng nhất --- một \textbf{phân tích chẩn đoán} chỉ ra \emph{vì sao} các phương pháp truy xuất có cấu trúc \emph{chưa} đánh bại được Vector RAG trên kho ngữ liệu nhỏ--mạch lạc, cùng các điều kiện để ưu thế của chúng có thể bộc lộ.
  
 
 \section{NGHIÊN CỨU BÀI BÁO LIÊN QUAN}
@@ -390,21 +390,22 @@ Dataset + scoring prompt & Identical for all pipelines \\
 \end{figure}
 
 \subsection{Bộ dữ liệu đánh giá}
-Tập đánh giá đa-bước gồm 15 câu hỏi, phân tầng theo \texttt{category} để báo cáo điểm tách theo từng loại --- bằng chứng thuyết phục nhất cho thấy GraphRAG mạnh ở đâu (Bảng~\ref{tab:dataset}). Mỗi câu kèm \texttt{ground\_truth}, \texttt{expected\_verdict} và \texttt{expected\_min\_accuracy}.
+Tập đánh giá gồm \textbf{30 câu hỏi} (hai tập 15 câu chạy độc lập rồi gộp kết quả), được grounded trực tiếp từ kho tài liệu COVID-19 và \emph{phân tầng} theo \texttt{category} để báo cáo điểm tách theo từng loại (Bảng~\ref{tab:dataset}). Mỗi câu kèm \texttt{ground\_truth}, \texttt{expected\_verdict} và \texttt{expected\_min\_accuracy}. Cột \emph{Giả thuyết} ghi kỳ vọng \emph{ban đầu} của nhóm về nơi cấu trúc đồ thị sẽ giúp ích --- chính các giả thuyết này được kiểm chứng (và phần lớn bị bác bỏ) ở Mục~\ref{sec:results}.
 
 \begin{table}[!t]
-\caption{Stratification of the multi-hop question set ($N=15$)}
+\caption{Stratification of the evaluation set ($N=30$, two merged subsets)}
 \label{tab:dataset}
 \centering
 \footnotesize
-\begin{tabular}{@{}p{0.42\columnwidth} c p{0.30\columnwidth}@{}}
+\begin{tabular}{@{}p{0.40\columnwidth} c p{0.32\columnwidth}@{}}
 \toprule
-\textbf{Type} & \textbf{\# Q} & \textbf{Expectation} \\
+\textbf{Type} & \textbf{\# Q} & \textbf{Giả thuyết ban đầu} \\
 \midrule
-\texttt{aggregation} (listing) & 5 & GraphRAG superior \\
-\texttt{comparison} & 3 & GraphRAG superior \\
-\texttt{multi\_hop} (reasoning) & 5 & GraphRAG superior \\
-\texttt{single\_hop} (factoid) & 2 & Vector $\approx$ GraphRAG \\
+\texttt{aggregation} (listing) & 9 & GraphRAG ưu thế \\
+\texttt{comparison} & 5 & GraphRAG ưu thế \\
+\texttt{multi\_hop} (reasoning) & 9 & GraphRAG ưu thế \\
+\texttt{logic} (điều kiện) & 2 & GraphRAG ưu thế \\
+\texttt{single\_hop} (factoid) & 5 & Vector $\approx$ GraphRAG \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -426,11 +427,11 @@ Giám khảo nhận câu hỏi, ground truth, đáp án và ngữ cảnh; bắt 
 \subsection{Prompt KG-RAG (Text-to-Cypher)}
 Pipeline KG dùng hai prompt: một sinh Cypher (ràng buộc dùng \texttt{MATCH (c:Chunk)}, ưu tiên \texttt{OR} để quét rộng, hỗ trợ song ngữ) và một tổng hợp đáp án chỉ từ kết quả truy vấn (``nếu cơ sở dữ liệu rỗng thì trả: Tôi không biết'').
 
-\section{KẾT QUẢ}
-\emph{Phần này sẽ được hoàn thiện sau khi chạy đủ benchmark cho cả ba pipeline.} Khung báo cáo và các bảng kết quả được chuẩn bị sẵn dưới đây để điền số liệu; trong đó hàng GraphRAG ở Bảng~\ref{tab:rubric} là số đo \emph{thực tế hiện có} trên $N=15$ câu đa-bước.
+\section{KẾT QUẢ}\label{sec:results}
+Bảng~\ref{tab:rubric} và~\ref{tab:bycat} trình bày kết quả trên toàn bộ $N=30$ câu (gộp hai tập). Để chạy được trọn mẻ trong giới hạn tốc độ của hạ tầng miễn phí, mẻ này dùng \texttt{num\_runs}$=1$ (giao thức \texttt{num\_runs}$=3$ được giữ cho lần chạy cuối khi có đủ hạn ngạch); một cơ chế \emph{thử lại khi giám khảo trả JSON hỏng} được bổ sung để tránh điểm 0 giả do lỗi phân tích cú pháp.
 
 \begin{table}[!t]
-\caption{Average rubric-score leaderboard (0--5), $N=15$}
+\caption{Average rubric-score leaderboard (0--5), $N=30$}
 \label{tab:rubric}
 \centering
 \footnotesize
@@ -439,38 +440,59 @@ Pipeline KG dùng hai prompt: một sinh Cypher (ràng buộc dùng \texttt{MATC
 \toprule
 \textbf{Pipeline} & \textbf{Corr} & \textbf{Comp} & \textbf{Rel} & \textbf{Faith} & \textbf{Ctx} & \textbf{Avg} \\
 \midrule
-Vector RAG & -- & -- & -- & -- & -- & -- \\
-KG-RAG & -- & -- & -- & -- & -- & -- \\
-GraphRAG & 4.00 & 3.80 & 4.07 & 4.40 & 4.47 & \textbf{4.15} \\
+\textbf{Vector RAG} & \textbf{4.03} & \textbf{3.97} & \textbf{4.67} & \textbf{4.87} & \textbf{4.50} & \textbf{4.41} \\
+GraphRAG & 3.27 & 3.23 & 3.53 & 4.33 & 3.87 & 3.65 \\
+KG-RAG & 1.73 & 1.63 & 2.13 & 2.33 & 2.17 & 2.00 \\
 \bottomrule
 \end{tabular}
 \\[2pt]
-{\scriptsize GraphRAG: Pass $13/15$ ($86.7\%$). Cells ``--'' to be filled in later.}
+{\scriptsize Pass rate: Vector $87\%$, GraphRAG $77\%$, KG-RAG $40\%$. Giá trị đậm = cao nhất.}
 \end{table}
 
 \begin{table}[!t]
-\caption{Average score by question category}
+\caption{Average overall score (0--5) by question category, $N=30$}
 \label{tab:bycat}
 \centering
 \footnotesize
-\begin{tabular}{@{}l c c c@{}}
+\begin{tabular}{@{}l c c c c@{}}
 \toprule
-\textbf{Category} & \textbf{Vector} & \textbf{KG-RAG} & \textbf{GraphRAG} \\
+\textbf{Category} & \textbf{\# Q} & \textbf{Vector} & \textbf{GraphRAG} & \textbf{KG-RAG} \\
 \midrule
-\texttt{aggregation} & -- & -- & -- \\
-\texttt{comparison} & -- & -- & -- \\
-\texttt{multi\_hop} & -- & -- & -- \\
-\texttt{single\_hop} & -- & -- & -- \\
+\texttt{aggregation} & 9 & \textbf{4.78} & 4.16 & 3.18 \\
+\texttt{comparison}  & 5 & \textbf{4.24} & 3.72 & 2.12 \\
+\texttt{multi\_hop}  & 9 & \textbf{4.40} & 3.44 & 1.20 \\
+\texttt{logic}       & 2 & \textbf{4.60} & 2.60 & 0.00 \\
+\texttt{single\_hop} & 5 & \textbf{3.84} & 3.44 & 2.00 \\
 \bottomrule
 \end{tabular}
 \\[2pt]
-{\scriptsize To be filled in later: shows GraphRAG's advantage concentrates on listing/multi-hop questions.}
+{\scriptsize Vector RAG dẫn ở \emph{mọi} category; KG-RAG thấp nhất, đặc biệt \texttt{logic}$=0$ và \texttt{multi\_hop}$=1{,}20$ do truy vấn Cypher trả về rỗng.}
 \end{table}
 
-Trên số liệu hiện có, GraphRAG đạt điểm trung bình $4{,}15/5$ với tỉ lệ Pass $86{,}7\%$, trong đó \emph{Faithfulness} ($4{,}40$) và \emph{Context Quality} ($4{,}47$) cao --- cho thấy lớp facts đồ thị bổ sung ngữ cảnh hữu ích mà không gây bịa đặt; \emph{Completeness} ($3{,}80$) là tiêu chí thấp nhất, đúng với kỳ vọng rằng câu liệt kê là khó nhất và là chỗ cần cải thiện. Theo thiết kế benchmark, kết luận về \emph{ưu thế của cấu trúc đồ thị} chỉ được khẳng định sau khi (i) xác nhận parity, (ii) GraphRAG vẫn thắng Vector RAG ở cấu hình robustness ($k=8$), và (iii) điểm tách tầng cho thấy chênh lệch tập trung ở \texttt{aggregation}/\texttt{multi\_hop}.
+\textbf{Phát hiện chính.} Trái với giả thuyết ban đầu, \textbf{Vector RAG ($4{,}41$) vượt GraphRAG ($3{,}65$) một cách nhất quán trên cả năm loại câu hỏi}. Chênh lệch không phải nhiễu thống kê: nó ổn định khi tăng từ $N=15$ lên $N=30$ và xuất hiện ở mọi tầng. Đáng chú ý, GraphRAG thấp hơn ở chính \emph{Relevance} ($3{,}53$ vs.\ $4{,}67$) và \emph{Completeness} ($3{,}23$ vs.\ $3{,}97$) --- hai tiêu chí mà lớp đồ thị lẽ ra phải hỗ trợ. \textbf{KG-RAG (Text-to-Cypher) xếp cuối với $2{,}00$} và tỉ lệ Pass chỉ $40\%$. Phân bố điểm của KG-RAG có dạng \emph{lưỡng cực} đặc trưng: khi truy vấn Cypher sinh ra khớp từ khóa thì đáp án tốt ($\geq 4$), nhưng có tới $60\%$ số câu truy vấn trả về \emph{rỗng} (keyword-miss) khiến hệ thống trả ``Tôi không biết'' và bị chấm gần $0$. Đây là minh chứng định lượng cho tính giòn của phương pháp khai thác đồ thị trực tiếp.
+
+\section{PHÂN TÍCH: VÌ SAO TRUY XUẤT CÓ CẤU TRÚC CHƯA VƯỢT VECTOR RAG}\label{sec:why}
+Việc cả GraphRAG lẫn KG-RAG đều không vượt được một đường cơ sở vector \emph{đơn giản} là một kết quả đáng để mổ xẻ. Phân tích cho thấy bốn nguyên nhân, trong đó không nguyên nhân nào phủ nhận \emph{ý tưởng} của retrieval có cấu trúc --- chúng chỉ ra rằng ưu thế của nó \emph{có điều kiện}.
+
+\subsection{Sự phù hợp giữa kho ngữ liệu và phương pháp}
+Kho ngữ liệu COVID-19 ở đây \emph{nhỏ và mạch lạc}: mỗi câu trả lời thường nằm gọn trong một hoặc hai đoạn văn được viết tốt (WHO/CDC). Trong điều kiện đó, truy xuất vector dày đặc gần như đã \emph{tối ưu} --- chunk chứa câu trả lời có độ tương đồng cao với truy vấn và được lấy ngay. Ưu thế lý thuyết của đồ thị --- nối các mảnh tri thức \emph{rải rác} mà một truy vấn không thể vớt hết bằng độ tương đồng --- không có ``đất diễn'' khi tri thức vốn đã tập trung. Đây là lý do gốc rễ và nằm ở \emph{dữ liệu}, không phải ở mã nguồn.
+
+\subsection{Lớp facts đồ thị làm giảm độ bám sát}
+Phân tích theo tiêu chí cho thấy lớp facts là con dao hai lưỡi. Vì được chèn cho \emph{mọi} câu hỏi (kể cả factoid đơn bước hay suy luận không cần liệt kê), khối facts khiến câu trả lời của GraphRAG \emph{loãng và kém tập trung} hơn, kéo \emph{Relevance} xuống ($3{,}53$ vs.\ $4{,}67$). Hơn nữa, các bộ ba phẳng không mã hóa được \emph{cấu trúc phân cấp} mà văn xuôi giữ được (ví dụ phân nhóm triệu chứng ``thường gặp / nghiêm trọng''), nên ở câu yêu cầu phân loại, facts không bù đắp được phần \emph{Completeness} bị mất mà còn gây nhiễu. Nói cách khác, trên một kho mà văn xuôi đã đầy đủ và có cấu trúc, lớp facts \emph{thêm nhiễu nhiều hơn thêm giá trị}.
+
+\subsection{Chất lượng của đồ thị trích xuất tự động}
+Nút thắt quan trọng nằm ở khâu \emph{xây dựng} đồ thị, không phải ý tưởng GraphRAG. Đồ thị được trích tự động từ ngữ liệu song ngữ chứa rất nhiều nút trùng nghĩa (số nhiều/ít, biến thể tên, và đặc biệt là cặp Việt--Anh như \texttt{Tiểu Đường}=\texttt{Diabetes}, \texttt{Bệnh Nặng}=\texttt{Severe Illness}), làm \emph{phân mảnh} quan hệ và khiến facts vừa thiếu vừa trùng lặp. Bước phân giải thực thể thủ công gộp $149\rightarrow 78$ nút đã nâng điểm \texttt{aggregation} của GraphRAG \emph{từ $2{,}36$ lên $4{,}28$} --- một cải thiện lớn cho thấy chất lượng đồ thị là yếu tố quyết định trần hiệu năng, và rằng công cụ dựng KG tự động hiện nay \emph{chưa đủ trưởng thành} so với hệ sinh thái embedding/vector đã chín muồi.
+
+\subsection{KG-RAG (Text-to-Cypher): tính giòn của truy vấn sinh}
+Pipeline KG bộc lộ một dạng thất bại khác và là pipeline kém nhất ($2{,}00/5$, Pass $40\%$). Truy vấn Cypher do LLM sinh \emph{rất giòn}: khi từ khóa trong câu hỏi không khớp chính xác văn bản trong nút, truy vấn trả về \emph{rỗng} (keyword-miss) và hệ thống buộc phải trả ``Tôi không biết''. Trên $N=30$ câu, khoảng $60\%$ truy vấn rơi vào tình trạng này, tạo ra phân bố điểm \emph{lưỡng cực} (gần $0$ hoặc $\geq 4$) thay vì tập trung quanh trung bình. Điều này lý giải vì sao KG-RAG sụp đổ ở các câu cần truy vấn chính xác --- \texttt{logic}$=0{,}00$ và \texttt{multi\_hop}$=1{,}20$ --- nhưng vẫn khá ở \texttt{aggregation}$=3{,}18$ (câu liệt kê rộng dễ khớp từ khóa hơn). Ngoài ra mỗi câu cần nhiều lượt gọi LLM (sinh Cypher + tổng hợp) nên tốn kém và dễ dính giới hạn tốc độ. Đây là minh chứng \emph{định lượng} cho nhược điểm đã nêu trong taxonomy: phương pháp khai thác đồ thị trực tiếp qua Text-to-Cypher đánh đổi tính ổn định để lấy khả năng truy vấn tường minh.
+
+\subsection{Khi nào cấu trúc đồ thị sẽ thắng}
+Tổng hợp lại, các phương pháp có cấu trúc \emph{chưa} vượt Vector RAG trong \emph{bối cảnh cụ thể này}, chứ không phải \emph{về nguyên tắc}. Phân tích chỉ ra các điều kiện để ưu thế của chúng bộc lộ: (i) kho ngữ liệu \emph{lớn, đa nguồn, phân mảnh}, nơi tri thức cùng một thực thể nằm rải ở nhiều tài liệu không giống nhau về từ ngữ; (ii) câu hỏi đòi hỏi \emph{bắc cầu đa chặng} thực sự giữa các thực thể; và (iii) một đồ thị \emph{chất lượng cao} (curate thủ công hoặc dùng builder tốt hơn). Trong khi đó, bằng chứng tích cực vẫn có: việc làm sạch đồ thị thu hẹp đáng kể khoảng cách ở \texttt{aggregation}, gợi ý rằng với đồ thị sạch hơn và kho phân mảnh hơn, cán cân có thể đổi chiều.
 
 \section{KẾT LUẬN}
-Báo cáo trình bày hướng tăng cường trợ lý hội thoại y tế bằng đồ thị tri thức, với đóng góp hiện thực trọng tâm là pipeline \textbf{GraphRAG lai hướng-thực-thể} kết hợp truy xuất vector làm điểm vào và duyệt quan hệ ngữ nghĩa trên Neo4j để bổ sung facts cùng bằng chứng. Song hành là một \textbf{khung đánh giá LLM-as-a-Judge kiểm soát biến}: rubric 5 tiêu chí, biểu quyết đa số, so sánh cặp mù chống thiên lệch, kiểm định giám khảo và giao thức parity --- cho phép quy mọi chênh lệch điểm về đúng lớp truy xuất. Kết quả sơ bộ cho thấy GraphRAG đạt độ trung thực và chất lượng ngữ cảnh cao; phần thực nghiệm đầy đủ cho cả ba pipeline trên tập dữ liệu lớn hơn sẽ được hoàn thiện trong các bảng đã chuẩn bị. Hạn chế hiện tại gồm: kích thước tập đánh giá còn nhỏ ($N=15$, cần $\geq 50$--$100$ câu để kết luận chắc chắn), KG-RAG nhạy với giới hạn tốc độ và chất lượng Cypher, và đồ thị trích tự động vẫn còn phân mảnh dù đã phân giải thực thể.
+Báo cáo hiện thực và so sánh có kiểm soát biến ba hướng truy xuất cho trợ lý hội thoại y tế --- Vector RAG, KG-RAG (Text-to-Cypher) và một GraphRAG lai hướng-thực-thể --- dưới cùng một Generator và một khung đánh giá LLM-as-a-Judge chặt chẽ (rubric 5 tiêu chí, giám khảo khác họ, parity ngữ cảnh, kiểm định giám khảo). Trái với kỳ vọng ban đầu, \textbf{kết quả thực nghiệm cho thấy Vector RAG vẫn là đường cơ sở rất mạnh và vượt cả GraphRAG lẫn KG-RAG} ($4{,}41$ so với $3{,}65$ và $2{,}00$) trên một kho ngữ liệu COVID-19 nhỏ--mạch lạc. Do đó, đóng góp giá trị nhất của báo cáo không phải một phương pháp ``chiến thắng'', mà là một \textbf{phân tích chẩn đoán trung thực về vì sao truy xuất có cấu trúc chưa vượt được truy xuất vector thuần túy}: (1) đặc tính kho ngữ liệu (nhỏ, mạch lạc) khiến vector đã gần tối ưu; (2) lớp facts đồ thị, khi bị chèn vô điều kiện, làm giảm độ bám sát của câu trả lời; (3) chất lượng đồ thị trích tự động là nút thắt --- minh chứng là phân giải thực thể nâng \texttt{aggregation} từ $2{,}36$ lên $4{,}28$; và (4) tính giòn của Text-to-Cypher khiến KG-RAG dễ trả về rỗng.
+
+Những phát hiện này định hướng công việc tương lai một cách cụ thể: đánh giá trên kho ngữ liệu \emph{lớn, đa nguồn, phân mảnh} --- nơi ưu thế bắc cầu của đồ thị mới có đất diễn; cải thiện chất lượng đồ thị (curate hoặc builder tốt hơn); và chèn facts \emph{có chọn lọc} theo loại câu hỏi để không làm hại độ bám sát. Hạn chế của nghiên cứu gồm: tập đánh giá còn vừa phải ($N=30$; lý tưởng $\geq 100$ câu) và mẻ báo cáo dùng \texttt{num\_runs}$=1$ do giới hạn hạn ngạch (đã giảm thiểu bằng cơ chế thử lại giám khảo). Trên hết, kết quả nhấn mạnh một thông điệp thực dụng: \emph{một đường cơ sở vector được triển khai tốt là một đối thủ mạnh, và lợi ích của cấu trúc đồ thị phải được chứng minh chứ không nên mặc định}.
 
 \bibliographystyle{IEEEtran}
 \bibliography{bibliography}

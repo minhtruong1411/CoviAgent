@@ -68,26 +68,27 @@ INTENT_KEYWORDS = [
 DEFAULT_GRAPHRAG_PROMPT = (
     "Bạn là một trợ lý y tế chuyên nghiệp về COVID-19.\n\n"
     "Bạn được cung cấp hai loại ngữ cảnh:\n"
-    "1. ĐOẠN VĂN THAM KHẢO (NGUỒN CHÍNH): văn bản gốc — hãy DỰA VÀO ĐÂY để trả lời, "
-    "diễn giải tự nhiên, giữ đúng cấu trúc/phân loại/sắc thái của tài liệu.\n"
-    "2. GỢI Ý TỪ ĐỒ THỊ (chỉ để tham khảo): danh sách quan hệ rút gọn, có thể trùng lặp "
-    "hoặc thiếu ngữ cảnh. Chỉ dùng để NHẮC bạn kiểm tra xem có bỏ sót ý nào không.\n\n"
+    "1. ĐOẠN VĂN THAM KHẢO (NGUỒN CHÍNH): văn bản gốc — DỰA VÀO ĐÂY để viết câu trả lời, "
+    "giữ ĐÚNG cấu trúc/cách phân loại/sắc thái của tài liệu (vd nếu tài liệu chia 'thường "
+    "gặp / ít gặp / nghiêm trọng' thì trả lời cũng phải theo đúng cách chia đó).\n"
+    "2. CHECKLIST TỪ ĐỒ THỊ: danh sách các mục liên quan đã gom nhóm, dùng để bạn KIỂM TRA "
+    "xem câu trả lời đã LIỆT KÊ ĐỦ chưa (đồ thị giúp không bỏ sót mục nào).\n\n"
     "NGUYÊN TẮC:\n"
     "- CHỈ dùng thông tin trong ngữ cảnh bên dưới, TUYỆT ĐỐI không bịa.\n"
-    "- Lấy ĐOẠN VĂN THAM KHẢO làm nguồn chính. TUYỆT ĐỐI KHÔNG sao chép nguyên văn các "
-    "dòng trong GỢI Ý TỪ ĐỒ THỊ; không nhắc tới 'đồ thị' trong câu trả lời.\n"
-    "- Nếu gợi ý đồ thị bị trùng (vd nhiều biến thể của cùng một khái niệm), hãy gộp lại "
-    "thành một mục duy nhất, diễn đạt tự nhiên.\n"
+    "- VIẾT câu trả lời theo ĐOẠN VĂN THAM KHẢO (văn phong + cấu trúc). Dùng CHECKLIST chỉ để "
+    "ĐỐI CHIẾU cho đủ ý; KHÔNG sao chép nguyên văn dòng checklist, KHÔNG nhắc tới 'đồ thị'.\n"
+    "- Nếu câu hỏi yêu cầu PHÂN NHÓM/PHÂN LOẠI, hãy bám cách phân nhóm trong ĐOẠN VĂN, "
+    "rồi dùng checklist để chắc chắn mỗi nhóm đã đủ mục.\n"
     "- Nếu ngữ cảnh không chứa thông tin liên quan, hãy nói: "
     "'Tài liệu hiện tại không có thông tin về vấn đề này.'\n"
     "- Trả lời bằng tiếng Việt, rõ ràng, có cấu trúc, đầy đủ.\n\n"
-    "===== ĐOẠN VĂN THAM KHẢO (nguồn chính) =====\n"
+    "===== ĐOẠN VĂN THAM KHẢO (nguồn chính để viết) =====\n"
     "{context_str}\n"
-    "===== GỢI Ý TỪ ĐỒ THỊ (chỉ tham khảo, có thể trùng) =====\n"
+    "===== CHECKLIST TỪ ĐỒ THỊ (để đối chiếu cho đủ ý) =====\n"
     "{facts_str}\n"
     "==============================\n\n"
     "Câu hỏi: {query_str}\n"
-    "Trả lời (diễn giải tự nhiên từ ĐOẠN VĂN, không sao chép gợi ý đồ thị): "
+    "Trả lời (viết theo ĐOẠN VĂN, dùng checklist để không bỏ sót ý): "
 )
 
 _WORD_RE = re.compile(r"[a-zA-Zà-ỹÀ-Ỹ0-9\-]+", re.UNICODE)
@@ -436,25 +437,68 @@ class GraphRAGPipeline(BasePipeline):
         return frozenset(w[:4] for w in toks) or frozenset([name.lower()])
 
     @classmethod
-    def _format_facts(cls, facts: List[Dict[str, Any]], max_lines: int = 15) -> str:
+    def _format_facts(cls, facts: List[Dict[str, Any]], max_lines: int = 12) -> str:
+        """Trình bày facts dạng CHECKLIST CÓ CẤU TRÚC (gom theo quan hệ) thay vì list phẳng.
+
+        Với mỗi loại quan hệ, GOM về phía 'hub' (bên ít giá trị phân biệt) để mỗi dòng
+        liệt kê trọn vẹn một nhóm — đây chính là thế mạnh completeness của đồ thị:
+          • Covid-19 — gây ra: Fever, Cough, Tiredness, Sore Throat, ...
+          • làm tăng nguy cơ Severe Illness: Older Adults, Diabetes, Cancer, ...
+          • phát hiện Covid-19: Pcr Tests, Antigen Tests, Naat
+        Cách này giúp LLM kiểm tra đủ ý mà KHÔNG bị rối như list phẳng từng triple.
+        """
         if not facts:
             return "(Không có gợi ý liên quan.)"
-        seen = set()
-        lines = []
+
+        # khử trùng triple theo khái niệm (gộp biến thể tên)
+        uniq, seen = [], set()
         for f in facts:
-            # khử trùng theo (quan hệ, khái niệm chủ thể, khái niệm đối tượng)
             key = (f["rel"], cls._concept_key(f["subj"]), cls._concept_key(f["obj"]))
-            if key in seen:
-                continue
-            seen.add(key)
-            verb = RELATION_VERB_VI.get(f["rel"], f["rel"].lower())
-            line = f"- {f['subj']} {verb} {f['obj']}"
-            if f.get("desc"):
-                line += f" ({f['desc']})"
-            lines.append(line)
+            if key not in seen:
+                seen.add(key)
+                uniq.append(f)
+
+        # gom theo loại quan hệ, giữ thứ tự xuất hiện (đã xếp hạng theo intent)
+        rel_order, by_rel = [], {}
+        for f in uniq:
+            if f["rel"] not in by_rel:
+                by_rel[f["rel"]] = []
+                rel_order.append(f["rel"])
+            by_rel[f["rel"]].append(f)
+
+        def dedup_concepts(names):
+            out, ks = [], set()
+            for n in names:
+                k = cls._concept_key(n)
+                if k not in ks:
+                    ks.add(k)
+                    out.append(n)
+            return out
+
+        lines = []
+        for rel in rel_order:
+            group = by_rel[rel]
+            verb = RELATION_VERB_VI.get(rel, rel.lower())
+            subs = [f["subj"] for f in group]
+            objs = [f["obj"] for f in group]
+            n_subj = len({cls._concept_key(s) for s in subs})
+            n_obj = len({cls._concept_key(o) for o in objs})
+            # gom về phía có ÍT giá trị phân biệt hơn (phía 'hub')
+            if n_obj <= n_subj:
+                # nhiều chủ thể → 1 đối tượng: "verb obj: subj1, subj2, ..."
+                for obj in dedup_concepts(objs):
+                    members = dedup_concepts([f["subj"] for f in group
+                                             if cls._concept_key(f["obj"]) == cls._concept_key(obj)])
+                    lines.append(f"• {verb} {obj}: " + ", ".join(members))
+            else:
+                # 1 chủ thể → nhiều đối tượng: "subj verb: obj1, obj2, ..."
+                for subj in dedup_concepts(subs):
+                    members = dedup_concepts([f["obj"] for f in group
+                                             if cls._concept_key(f["subj"]) == cls._concept_key(subj)])
+                    lines.append(f"• {subj} {verb}: " + ", ".join(members))
             if len(lines) >= max_lines:
                 break
-        return "\n".join(lines)
+        return "\n".join(lines[:max_lines])
 
     # ──────────────────────────────────────────────
     #  Dựng ngữ cảnh (KHÔNG gọi LLM) — dùng chung cho query() và thống kê parity

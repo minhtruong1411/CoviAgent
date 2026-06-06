@@ -27,6 +27,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+import os
 import yaml
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
@@ -115,21 +116,45 @@ def build_pipeline(config: AppConfig, p_type: str = "vector") -> BasePipeline:
     return VectorRAGPipeline(retriever=retriever, llm=llm)
 
 
+def _collect_groq_keys() -> list:
+    """Gom mọi khoá Groq từ .env: GROQ_API_KEY + GROQ_API_KEY_1..6 (khử trùng, bỏ placeholder)."""
+    names = ["GROQ_API_KEY"] + [f"GROQ_API_KEY_{i}" for i in range(1, 7)]
+    keys, seen = [], set()
+    for n in names:
+        v = (os.environ.get(n) or "").strip()
+        if v and v not in seen and not v.startswith("gsk_key"):
+            seen.add(v)
+            keys.append(v)
+    return keys
+
+
 def build_judge(config: AppConfig) -> LLMJudge:
-    """Build LLMJudge from AppConfig's judge section."""
+    """Build LLMJudge from AppConfig's judge section.
+
+    Với provider Groq: dựng MỘT LLM cho MỖI khoá trong .env để giám khảo xoay vòng
+    khi gặp rate-limit 429 (phase judge không 'hết key' giữa chừng).
+    """
     judge_config = config.judge or JudgeConfig()
-    
-    # Create judge LLM using the factory
-    judge_llm_config = LLMConfig(
-        provider=judge_config.provider,
-        model_name=judge_config.model_name,
-        temperature=judge_config.temperature,
-        api_key=judge_config.api_key,
-        api_key_env_var=judge_config.api_key_env_var,
-    )
-    judge_llm = create_llm(judge_llm_config)
-    
-    return LLMJudge(judge_llm=judge_llm, config=judge_config)
+
+    def make_llm(api_key=None):
+        return create_llm(LLMConfig(
+            provider=judge_config.provider,
+            model_name=judge_config.model_name,
+            temperature=judge_config.temperature,
+            api_key=api_key or judge_config.api_key,
+            api_key_env_var=None if api_key else judge_config.api_key_env_var,
+        ))
+
+    judge_llms = None
+    if judge_config.provider.lower().strip() == "groq":
+        keys = _collect_groq_keys()
+        if len(keys) > 1:
+            judge_llms = [make_llm(api_key=k) for k in keys]
+            print(f"🔑 Giám khảo dùng {len(judge_llms)} khoá Groq (xoay vòng khi 429).")
+
+    judge_llm = judge_llms[0] if judge_llms else make_llm()
+
+    return LLMJudge(judge_llm=judge_llm, config=judge_config, judge_llms=judge_llms)
 
 
 def load_questions(questions_path: str, max_questions: int = None) -> list[QAItem]:

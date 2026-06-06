@@ -26,7 +26,7 @@ def main():
     # Lấy mọi biến GROQ_API_KEY / GROQ_API_KEY_1..3 đang đặt, khử trùng, giữ thứ tự.
     from dotenv import load_dotenv
     load_dotenv()
-    key_names = ["GROQ_API_KEY", "GROQ_API_KEY_1", "GROQ_API_KEY_2", "GROQ_API_KEY_3"]
+    key_names = ["GROQ_API_KEY"] + [f"GROQ_API_KEY_{i}" for i in range(1, 7)]
     keys, seen = [], set()
     for name in key_names:
         v = (os.environ.get(name) or "").strip()

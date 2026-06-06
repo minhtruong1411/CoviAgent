@@ -1,0 +1,122 @@
+[
+  {
+    "id": "S2_01",
+    "question": "Liệt kê tất cả các cách một người có thể tiếp cận hoặc lấy xét nghiệm COVID-19 theo tài liệu.",
+    "ground_truth": "Có thể mua bộ tự xét nghiệm (at-home test) trực tuyến hoặc tại nhà thuốc và cửa hàng bán lẻ; đến điểm xét nghiệm cộng đồng như nhà thuốc hoặc trung tâm y tế gần nhà (có thể miễn phí hoặc chi phí thấp); nhận xét nghiệm NAAT hoặc kháng nguyên miễn phí qua sở y tế địa phương; trao đổi với bác sĩ hoặc nhà cung cấp dịch vụ y tế về các lựa chọn xét nghiệm khác; và người khuyết tật có thể gọi Đường dây Thông tin và Tiếp cận dành cho Người khuyết tật để được hỗ trợ tìm nơi xét nghiệm.",
+    "category": "aggregation",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "S2_02",
+    "question": "Theo tài liệu, có những hình thức hoặc đường dùng thuốc điều trị COVID-19 nào?",
+    "ground_truth": "Gồm: thuốc kháng virus uống tại nhà (Paxlovid, Lagevrio); thuốc kháng virus truyền tĩnh mạch tại cơ sở y tế (Veklury/remdesivir); với người nhập viện, bác sĩ có thể dùng các loại thuốc khác tuỳ mức độ nặng như thuốc trị virus, thuốc giảm phản ứng miễn dịch quá mức, hoặc thuốc điều trị biến chứng COVID-19; và với người suy giảm miễn dịch đã dùng kháng virus mà vẫn còn triệu chứng, có thể được khuyến nghị huyết tương người khỏi bệnh (convalescent plasma).",
+    "category": "aggregation",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "S2_03",
+    "question": "Liệt kê các nguồn có thể nhận vaccine COVID-19 miễn phí.",
+    "ground_truth": "Vaccine COVID-19 miễn phí có thể nhận qua: bảo hiểm y tế tư nhân; Medicare; Medicaid; các chương trình mạng lưới an toàn y tế công cộng (public health safety net programs); và Chương trình Vaccine cho Trẻ em của CDC (CDC's Vaccines for Children Program).",
+    "category": "aggregation",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "S2_04",
+    "question": "Theo tài liệu, COVID-19 có thể dẫn đến những kết cục sức khoẻ nghiêm trọng nào?",
+    "ground_truth": "COVID-19 có thể khiến người bệnh trở nặng, phải nhập viện và thậm chí tử vong; bất kỳ ai ở mọi lứa tuổi đều có thể bị bệnh nặng hoặc tử vong. Các triệu chứng nghiêm trọng gồm khó thở hoặc hụt hơi, mất khả năng nói hoặc khả năng vận động, lú lẫn, và đau ngực.",
+    "category": "aggregation",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "S2_05",
+    "question": "Một người bị suy giảm miễn dịch đã tiêm vaccine nhưng vẫn muốn tăng cường bảo vệ. Họ có những lựa chọn bổ sung nào?",
+    "ground_truth": "Người suy giảm miễn dịch có thể cần thêm các liều vaccine bổ sung (vì đáp ứng với vaccine có thể giảm). Ngoài ra có thể dùng Pemivibart (Pemgarda) — kháng thể đơn dòng dự phòng trước phơi nhiễm, dành cho người suy giảm miễn dịch mức vừa hoặc nặng từ 12 tuổi trở lên và nặng ít nhất 88 pounds, dùng ít nhất 2 tuần sau khi tiêm vaccine và lặp lại mỗi 3 tháng nếu cần bảo vệ liên tục. Nếu đã dùng thuốc kháng virus mà vẫn còn triệu chứng, bác sĩ có thể khuyến nghị huyết tương người khỏi bệnh.",
+    "category": "multi_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "S2_06",
+    "question": "Một người vừa nhận kết quả xét nghiệm COVID-19 dương tính thì nên làm những gì tiếp theo?",
+    "ground_truth": "Thực hiện các bước để phòng ngừa lây lan COVID-19; theo dõi triệu chứng và nếu có bất kỳ dấu hiệu cảnh báo khẩn cấp nào thì tìm chăm sóc cấp cứu ngay; và nếu có yếu tố nguy cơ bị bệnh nặng thì tìm chăm sóc y tế để được điều trị ngay — việc điều trị cần được bắt đầu trong vòng vài ngày kể từ khi triệu chứng khởi phát.",
+    "category": "multi_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "S2_07",
+    "question": "Vì sao một người có nguy cơ cao nên trao đổi với bác sĩ về việc điều trị NGAY cả khi triệu chứng còn nhẹ?",
+    "ground_truth": "Vì việc điều trị phải được bắt đầu sớm — trong vòng 5-7 ngày kể từ khi triệu chứng bắt đầu — và không cần phải có kết quả xét nghiệm dương tính mới được bắt đầu điều trị. Thuốc kháng virus nhắm vào các bộ phận của virus để ngăn nó nhân lên, giúp phòng ngừa bệnh nặng và tử vong; do đó với người nguy cơ cao, bắt đầu điều trị sớm là then chốt dù triệu chứng còn nhẹ.",
+    "category": "multi_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "S2_08",
+    "question": "Người bị suy giảm miễn dịch cần lưu ý gì về đáp ứng với vaccine và liều dùng?",
+    "ground_truth": "Người bị suy giảm miễn dịch có nguy cơ cao hơn bị COVID-19 nặng và có thể có đáp ứng với vaccine bị giảm, nên họ có thể cần tiêm thêm các liều vaccine bổ sung.",
+    "category": "multi_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "S2_09",
+    "question": "So sánh Paxlovid và Veklury (remdesivir) về đường dùng và thời hạn bắt đầu điều trị.",
+    "ground_truth": "Paxlovid được uống bằng đường miệng tại nhà và phải bắt đầu trong vòng 5 ngày kể từ khi triệu chứng bắt đầu. Veklury (remdesivir) được truyền tĩnh mạch tại cơ sở y tế trong 3 ngày liên tiếp và phải bắt đầu trong vòng 7 ngày kể từ khi triệu chứng bắt đầu.",
+    "category": "comparison",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "S2_10",
+    "question": "Khi gặp triệu chứng thường gặp so với triệu chứng nghiêm trọng của COVID-19, cách xử trí khác nhau như thế nào?",
+    "ground_truth": "Với triệu chứng nhẹ hoặc thường gặp (như sốt, ho, mệt mỏi) ở người vốn khoẻ mạnh: nên tự kiểm soát triệu chứng tại nhà. Với triệu chứng nghiêm trọng (khó thở hoặc hụt hơi, mất khả năng nói hoặc vận động hoặc lú lẫn, đau ngực): cần tìm chăm sóc y tế khẩn cấp ngay lập tức, và luôn gọi điện trước khi đến gặp bác sĩ hoặc cơ sở y tế.",
+    "category": "comparison",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "S2_11",
+    "question": "Một người có kết quả dương tính cách đây khoảng 20 ngày, hiện đang có triệu chứng. Họ nên dùng loại xét nghiệm nào và vì sao?",
+    "ground_truth": "Trường hợp này (đã dương tính trong vòng 30 ngày và hiện có triệu chứng) nên dùng xét nghiệm KHÁNG NGUYÊN (antigen) và lặp lại các lần xét nghiệm âm tính theo khuyến nghị của FDA. Lý do là xét nghiệm NAAT có thể tiếp tục cho kết quả dương tính tới 90 ngày sau khi nhiễm, nên không phù hợp để xác định một lần nhiễm mới trong giai đoạn này.",
+    "category": "logic",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "S2_12",
+    "question": "Trong trường hợp nào tài liệu khuyến nghị KHÔNG cần xét nghiệm để phát hiện nhiễm mới?",
+    "ground_truth": "Khi một người đã có kết quả xét nghiệm dương tính trong vòng 30 ngày gần đây VÀ hiện không có triệu chứng — trong trường hợp đó, việc xét nghiệm để phát hiện một lần nhiễm mới là không được khuyến nghị.",
+    "category": "logic",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 3
+  },
+  {
+    "id": "S2_13",
+    "question": "Có thể dùng thuốc không kê đơn nào để giảm triệu chứng COVID-19 nhẹ tại nhà?",
+    "ground_truth": "Có thể dùng các thuốc không kê đơn như acetaminophen hoặc ibuprofen để giúp người bệnh cảm thấy dễ chịu hơn.",
+    "category": "single_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 4
+  },
+  {
+    "id": "S2_14",
+    "question": "Kết quả dương tính của xét nghiệm nhanh kháng nguyên có đáng tin cậy không?",
+    "ground_truth": "Có. Theo tài liệu, kết quả dương tính của xét nghiệm kháng nguyên là chính xác và đáng tin cậy.",
+    "category": "single_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 4
+  },
+  {
+    "id": "S2_15",
+    "question": "Triệu chứng của hiện tượng COVID-19 rebound thường ở mức độ nào và kéo dài bao lâu?",
+    "ground_truth": "Triệu chứng rebound thường nhẹ và tự khỏi trong vài ngày.",
+    "category": "single_hop",
+    "expected_verdict": "Pass",
+    "expected_min_accuracy": 4
+  }
+]

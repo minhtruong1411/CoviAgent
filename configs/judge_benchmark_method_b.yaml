@@ -25,12 +25,11 @@ qdrant_url: "http://localhost:6333"
 # Judge configuration (không cần thiết trong config-b vì sẽ dùng config của A, nhưng có thể khai báo cho đủ format)
 judge:
   provider: "groq"
-  # GIÁM KHẢO dùng model KHÁC generator (generator = Llama-3.3-70B) để tránh
-  # self-preference bias. Xác nhận ID khả dụng trên tài khoản Groq của bạn; có thể
-  # thay bằng: moonshotai/kimi-k2-instruct | deepseek-r1-distill-llama-70b ...
+  # GIÁM KHẢO dùng Groq gpt-oss-120b (khác generator Llama → không self-bias).
+  # num_runs=1 để VỪA trần token/ngày của Groq: num_runs=3 tạo ~225k token > 200k TPD.
   model_name: "openai/gpt-oss-120b"
   temperature: 0.0
   api_key_env_var: "GROQ_API_KEY"
-  num_runs: 3              # Majority vote: 3 lần chấm
-  api_delay_seconds: 10.0  # Delay tránh rate limit Groq
+  num_runs: 1              # 1 lần chấm — đánh đổi độ ổn định lấy việc vừa quota free
+  api_delay_seconds: 8.0
   pass_threshold: 3.0      # Trung bình >= 3.0 → Pass

@@ -193,9 +193,35 @@ class LLMJudge:
     - Gold case validation to verify judge reliability
     """
     
-    def __init__(self, judge_llm: LLM, config: JudgeConfig):
-        self.llm = judge_llm
+    def __init__(self, judge_llm: LLM, config: JudgeConfig, judge_llms: Optional[List[LLM]] = None):
+        # Hỗ trợ NHIỀU LLM (mỗi API key một LLM) để xoay vòng khi gặp rate-limit 429.
+        self.llms: List[LLM] = judge_llms if judge_llms else [judge_llm]
+        self.llm = self.llms[0]   # giữ tương thích ngược
         self.config = config
+        self._idx = 0
+
+    def _complete(self, prompt: str) -> str:
+        """Gọi LLM giám khảo, TỰ XOAY KEY + retry khi gặp rate-limit (429).
+
+        Trải tải qua mọi key trong .env; nếu một key bị giới hạn thì nhảy sang key
+        kế tiếp và thử lại (có backoff). Nhờ đó phase judge không 'hết key' giữa chừng.
+        """
+        last_err = None
+        attempts = max(4, len(self.llms) * 2)
+        for _ in range(attempts):
+            llm = self.llms[self._idx]
+            try:
+                return str(llm.complete(prompt))
+            except Exception as e:  # noqa: BLE001 — cần bắt rộng để xử lý 429 từ provider
+                last_err = e
+                msg = str(e).lower()
+                is_rate = ("429" in msg) or ("rate limit" in msg) or ("rate_limit" in msg) or ("quota" in msg)
+                # luôn nhảy sang key kế tiếp (nếu có), chờ rồi thử lại
+                if len(self.llms) > 1:
+                    self._idx = (self._idx + 1) % len(self.llms)
+                wait = self.config.api_delay_seconds if is_rate else 3.0
+                time.sleep(min(max(wait, 2.0), 20.0))
+        raise last_err
     
     def score_rubric(
         self,
@@ -226,27 +252,33 @@ class LLMJudge:
             pass_threshold=self.config.pass_threshold,
         )
         
-        response = self.llm.complete(prompt)
-        response_text = str(response).strip()
-        
-        try:
-            data = _extract_json(response_text)
-            return JudgeRubricScore(
-                correctness=_clamp_score(data.get("correctness", 0)),
-                completeness=_clamp_score(data.get("completeness", 0)),
-                relevance=_clamp_score(data.get("relevance", 0)),
-                faithfulness=_clamp_score(data.get("faithfulness", 0)),
-                context_quality=_clamp_score(data.get("context_quality", 0)),
-                final_decision=str(data.get("final_decision", "Fail")),
-                explanation=str(data.get("explanation", "Không có giải thích")),
-            )
-        except (ValueError, KeyError) as e:
-            # Fallback: return zero scores with error explanation
-            return JudgeRubricScore(
-                correctness=0, completeness=0, relevance=0, faithfulness=0, context_quality=0,
-                final_decision="Fail",
-                explanation=f"Lỗi parse JSON từ judge: {str(e)[:200]}",
-            )
+        # RETRY khi giám khảo trả JSON hỏng — model 'reasoning' (gpt-oss) đôi khi
+        # kèm văn bản suy luận. Thử lại vài lần thay vì chấm 0 OAN (điểm 0 do lỗi
+        # parse sẽ bóp méo benchmark, nhất là khi num_runs=1 không có majority-vote).
+        last_err = None
+        for attempt in range(3):
+            response_text = self._complete(prompt).strip()
+            try:
+                data = _extract_json(response_text)
+                return JudgeRubricScore(
+                    correctness=_clamp_score(data.get("correctness", 0)),
+                    completeness=_clamp_score(data.get("completeness", 0)),
+                    relevance=_clamp_score(data.get("relevance", 0)),
+                    faithfulness=_clamp_score(data.get("faithfulness", 0)),
+                    context_quality=_clamp_score(data.get("context_quality", 0)),
+                    final_decision=str(data.get("final_decision", "Fail")),
+                    explanation=str(data.get("explanation", "Không có giải thích")),
+                )
+            except (ValueError, KeyError) as e:
+                last_err = e
+                if attempt < 2 and self.config.api_delay_seconds > 0:
+                    time.sleep(min(self.config.api_delay_seconds, 5.0))
+        # Hết lượt thử vẫn hỏng → trả 0 kèm lý do (hiếm khi xảy ra)
+        return JudgeRubricScore(
+            correctness=0, completeness=0, relevance=0, faithfulness=0, context_quality=0,
+            final_decision="Fail",
+            explanation=f"Lỗi parse JSON từ judge sau 3 lần thử: {str(last_err)[:160]}",
+        )
     
     def score_rubric_majority(
         self,
@@ -343,7 +375,7 @@ class LLMJudge:
             output_a=output_a,
             output_b=output_b,
         )
-        response_ab = self.llm.complete(prompt_ab)
+        response_ab = self._complete(prompt_ab)
         try:
             data_ab = _extract_json(str(response_ab))
             winner_ab = str(data_ab.get("winner", "Tie")).strip().upper()
@@ -362,7 +394,7 @@ class LLMJudge:
             output_a=output_b,  # Swapped!
             output_b=output_a,  # Swapped!
         )
-        response_ba = self.llm.complete(prompt_ba)
+        response_ba = self._complete(prompt_ba)
         try:
             data_ba = _extract_json(str(response_ba))
             winner_ba_raw = str(data_ba.get("winner", "Tie")).strip().upper()
@@ -403,7 +435,7 @@ class LLMJudge:
                 )
                 swap = True
             
-            response_tie = self.llm.complete(prompt_tie)
+            response_tie = self._complete(prompt_tie)
             try:
                 data_tie = _extract_json(str(response_tie))
                 winner_tie = str(data_tie.get("winner", "Tie")).strip().upper()

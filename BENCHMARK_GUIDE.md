@@ -227,3 +227,64 @@ python scripts/run_judge_benchmark.py --mode gold-validate `
 ```
 
 > **Lưu ý reproducibility:** mỗi lần đổi tham số (top_k, max_facts, model giám khảo...) đều phải chạy lại **`--mode parity`** (Mục 7.3) và **`gold-validate`** (8.3) rồi mới generate/judge, và ghi lại cấu hình kèm kết quả.
+
+---
+
+## 9. Các script tiện ích & quy trình thực dụng
+
+### 9.1 Tách Generate / Judge (an toàn quota)
+Mọi script đều hỗ trợ `--phase`. **Luôn tách 2 phase** để tiết kiệm và chịu lỗi tốt:
+- **`--phase generate`**: chỉ chạy pipeline sinh đáp án + lưu file `.json`. **KHÔNG gọi giám khảo** → không tốn token judge.
+- **`--phase judge`**: đọc đáp án đã lưu rồi chấm. Đây là nơi tốn token judge; **có cache resume** (hết quota giữa chừng → chạy lại đúng lệnh là chấm tiếp).
+
+### 9.2 Benchmark KHÔNG có KG — `run_judges_no_kg.py`
+KG-RAG (Text-to-Cypher) tốn nhiều lượt gọi LLM và dễ dính rate-limit/Cypher rỗng, làm hỏng cả mẻ. Script này chạy **chỉ Vector + GraphRAG** (bỏ KG), tái dùng nguyên cơ chế xoay key `.env` + cache của `run_all_judges.py`:
+```powershell
+python scripts/run_judges_no_kg.py --phase generate --questions data/golden_queries_multihop.json --answers-file experiments/answers_mh.json
+python scripts/run_judges_no_kg.py --phase judge    --questions data/golden_queries_multihop.json --answers-file experiments/answers_mh.json
+```
+Vẫn ghi đè được `--pipelines` (vd chạy lại riêng graphrag):
+```powershell
+python scripts/run_judges_no_kg.py --phase generate --pipelines graphrag --questions data/golden_queries_multihop.json --answers-file experiments/answers_mh.json
+```
+
+### 9.3 Chạy KG RIÊNG (khi cần số KG)
+Vì KG hay lỗi, hãy chạy nó **tách hẳn** khỏi Vector/GraphRAG, dùng `--pipelines kg`:
+```powershell
+python scripts/run_all_judges.py --phase generate --pipelines kg --questions data/golden_queries_multihop.json --answers-file experiments/answers_kg.json
+python scripts/run_all_judges.py --phase judge    --pipelines kg --questions data/golden_queries_multihop.json --answers-file experiments/answers_kg.json
+```
+- KG cần **Neo4j đang chạy** (ở dự án này là Neo4j Aura cloud — xem `NEO4J_URI` trong `.env`).
+- KG sinh đáp án bằng generator Groq llama-3.3-70b (model riêng, TPD tách với judge).
+- Bình thường ~60% câu trả "Tôi không biết" do Cypher keyword-miss → điểm thấp; đó là kết quả thật, không phải lỗi cấu hình.
+
+### 9.4 Gộp & phân tích kết quả nhiều mẻ — `analyze_results.py`
+Chạy nhiều tập / nhiều pipeline riêng rẽ rồi **cộng dồn** thành một báo cáo (per-tiêu chí + per-category + leaderboard). Tự khử trùng theo câu hỏi:
+```powershell
+# Gộp 2 tập × 3 pipeline → báo cáo N=30 ba chiều
+python scripts/analyze_results.py `
+  --cache experiments/answers_mh_cache.json experiments/answers_set2_cache.json `
+          experiments/answers_kg_cache.json experiments/answers_kg_set2_cache.json `
+  --gold  data/golden_queries_multihop.json data/golden_queries_set2.json
+```
+- `--cache`: một hoặc nhiều file `*_cache.json` (kết quả judge).
+- `--gold`: các file câu hỏi tương ứng (để lấy `category`).
+- In: bảng tiêu chí, xếp hạng, bảng theo category, Pass%.
+
+### 9.5 Quy trình đầy đủ đã dùng cho báo cáo (tham khảo)
+```powershell
+# 1) Vector + GraphRAG trên 2 tập (no-KG, an toàn)
+python scripts/run_judges_no_kg.py --phase generate --questions data/golden_queries_multihop.json --answers-file experiments/answers_mh.json
+python scripts/run_judges_no_kg.py --phase judge    --questions data/golden_queries_multihop.json --answers-file experiments/answers_mh.json
+python scripts/run_judges_no_kg.py --phase generate --questions data/golden_queries_set2.json     --answers-file experiments/answers_set2.json
+python scripts/run_judges_no_kg.py --phase judge    --questions data/golden_queries_set2.json     --answers-file experiments/answers_set2.json
+
+# 2) KG chạy riêng trên 2 tập
+python scripts/run_all_judges.py --phase generate --pipelines kg --questions data/golden_queries_multihop.json --answers-file experiments/answers_kg.json
+python scripts/run_all_judges.py --phase judge    --pipelines kg --questions data/golden_queries_multihop.json --answers-file experiments/answers_kg.json
+python scripts/run_all_judges.py --phase generate --pipelines kg --questions data/golden_queries_set2.json      --answers-file experiments/answers_kg_set2.json
+python scripts/run_all_judges.py --phase judge    --pipelines kg --questions data/golden_queries_set2.json      --answers-file experiments/answers_kg_set2.json
+
+# 3) Gộp tất cả → leaderboard N=30 ba chiều (Mục 9.4)
+```
+> **Mẹo quota:** judge `num_runs=1` để vừa free-tier; nâng lên `num_runs=3` ở lần chạy cuối khi có đủ hạn ngạch. Giám khảo tự xoay các key Groq trong `.env` và tự retry khi gặp 429 / JSON hỏng.
